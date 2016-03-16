@@ -1,0 +1,129 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Mojolicious::Lite;
+use Mojo::SQLite;
+use Mojo::Date;
+
+$ENV{TZ} = 'UTC';
+
+plugin Minion => { SQLite => 'sqlite:minion.db' };
+
+app->minion->add_task(
+    update => sub {
+        my ( $job, $url ) = @_;
+        $job->app->log->debug("Updating $url\n");
+        my $last_modified = $job->app->sql->db->query(
+            'select last_modified from users where url is ?', $url )
+          ->hash->{last_modified};
+        my $tx = $job->app->ua->get($url);
+        if ( my $res = $tx->success ) {
+            for my $line ( split( "\n", $res->body ) ) {
+                my ( $time, $tweet ) = split( "\t", $line, 2 );
+                $time = Mojo::Date->new($time)->epoch;
+                next if !$time;
+                $job->app->sql->db->query(
+                    'insert into tweets (user,timestamp,tweet)'
+                      . ' values ((select id from users where url is ?),?,?)',
+                    $url, $time, $tweet );
+            }
+            if ( $res->headers->last_modified ) {
+                $job->app->sql->db->query(
+                    'update users set last_modified = ? where url is ?',
+                    $res->headers->last_modified, $url );
+            }
+
+        }
+        $job->app->log->debug("Enqueue $url\n");
+        $job->app->minion->enqueue( 'update', [$url], { delay => 60 } );
+        return;
+    }
+);
+
+my $sql;
+helper sql => sub {
+    if ( !$sql ) {
+        $sql = Mojo::SQLite->new('sqlite:registry.db');
+        $sql->db->dbh->sqlite_create_function( 'to_rfc3339', 1,
+            sub { Mojo::Date->new(shift)->to_datetime } );
+        $sql->db->dbh->sqlite_create_function( 'to_mention', 2,
+            sub { "@<$_[0] $_[1]>" } );
+    }
+    return $sql;
+};
+
+helper to_text => sub {
+    my ( $c, $sql, $query ) = @_;
+    $c->sql->db->query( $sql, $query )
+      ->arrays->map( sub { join( "\t", @$_ ) } )->join("\n");
+};
+
+under '/api/plain/';
+
+get '/users' => sub {
+    my $c = shift;
+    my $query = $c->param('q') || '%';
+    return $c->render(
+        text => $c->to_text(
+            'SELECT url,to_rfc3339(timestamp),nick FROM users WHERE url LIKE ?',
+            $query
+        )
+    );
+};
+
+get '/tweets' => sub {
+    my $c     = shift;
+    my $query = $c->param('q') || '%';
+    my @data  = @{ [] };
+    return $c->render(
+        text => $c->to_text(
+            'select to_mention(nick,url),to_rfc3339(tweets.timestamp),tweet'
+              . ' from tweets join users on tweets.user == users.id where tweet like ?',
+            "%$query%"
+        )
+    );
+};
+
+get '/mentions' => sub {
+    my $c     = shift;
+    my $query = $c->param('url');
+    return $c->render( status => 400, text => '`url` must be provided.' )
+      if !$query;
+    return $c->render(
+        text => $c->to_text(
+            'select to_mention(nick,url),tweet,tweets.timestamp from tweets',
+            ' join users on tweets.user == users.id where tweet like ?',
+            "%@<_% $query>"
+        )
+    );
+};
+
+get '/tags/#tag' => sub {
+    my $c     = shift;
+    my $query = $c->param('tag');
+    return $c->render( status => 400, text => '`tag` must be provided.' )
+      if !$query;
+    return $c->render(
+        text => $c->to_text(
+            'select to_mention(nick,url),tweet,tweets.timestamp from tweets',
+            ' join users on tweets.user == users.id where tweet like ?',
+            "%#$query"
+        )
+    );
+};
+
+post '/users' => sub {
+    my $c = shift;
+    my ( $url, $nick ) = ( $c->param('url'), $c->param('nickname') );
+    return $c->render( text => 'Oops.', status => 400 )
+      if !$url || !$nick;
+    eval {
+        $c->sql->db->query( 'insert into users ( nick, url ) values (?,?)',
+            $nick, $url );
+        $c->minion->enqueue( 'update', [$url], { delay => 60 } );
+    };
+    $c->log->debug("$@") if $@;
+    return $c->render( text => 'Ok.', status => 200 );
+};
+
+app->start;
