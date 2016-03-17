@@ -7,7 +7,16 @@ use Mojo::Date;
 
 $ENV{TZ} = 'UTC';
 
-plugin Minion => { SQLite => 'sqlite:minion.db' };
+my $config = plugin 'Config' => {
+    default => {
+        minion_db    => 'sqlite:minion.db',
+        registry_db  => 'sqlite:registry.db',
+        delay        => 300,
+        registration => 0,
+    }
+};
+
+plugin Minion => { SQLite => $config->{minion_db} };
 
 app->minion->add_task(
     update => sub {
@@ -43,7 +52,7 @@ app->minion->add_task(
 my $sql;
 helper sql => sub {
     if ( !$sql ) {
-        $sql = Mojo::SQLite->new('sqlite:registry.db');
+        $sql = Mojo::SQLite->new( $config->{registry_db} );
         $sql->db->dbh->sqlite_create_function( 'to_rfc3339', 1,
             sub { Mojo::Date->new(shift)->to_datetime } );
         $sql->db->dbh->sqlite_create_function( 'to_mention', 2,
@@ -114,6 +123,8 @@ get '/tags/#tag' => sub {
 
 post '/users' => sub {
     my $c = shift;
+    return $c->render( text => 'Registration closed.', status => 403 );
+    if !$config->{registration};
     my ( $url, $nick ) = ( $c->param('url'), $c->param('nickname') );
     return $c->render( text => 'Oops.', status => 400 )
       if !$url || !$nick;
