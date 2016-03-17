@@ -78,9 +78,9 @@ app->minion->add_task(
         my ( $nick, $url, $last_modified ) =
           @{$result}{qw( nick url last_modified )};
 
-        $job->app->log->debug("Updating $url\n");
+        $job->app->log->debug("Updating $url");
 
-        $log->debug("Update for unknown user $url. Skipping\n")
+        $log->debug("Update for unknown user $url. Skipping")
           if !$result;
 
         $last_modified = Mojo::Date->new($last_modified)->to_string
@@ -94,11 +94,11 @@ app->minion->add_task(
         my $tx = $job->app->ua->get( $url, $params );
 
         try {
-            $log->debug("Try $url\n");
+            $log->debug("Try $url");
             my $res = $tx->success;
             die $tx->error->{message} if !$res;
 
-            $job->app->log->debug("Success $url\n");
+            $job->app->log->debug("Success $url");
 
             if ( $res->code == 301 || $res->code == 307 ) {
                 $db->query( 'delete from users where url is ?', $url );
