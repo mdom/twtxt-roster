@@ -67,7 +67,7 @@ helper to_text => sub {
       ->arrays->map( sub { join( "\t", @$_ ) } )->join("\n");
 };
 
-under '/api/plain/';
+under '/api/:format/' => { format => ['plain'] };
 
 get '/users' => sub {
     my $c = shift;
