@@ -87,7 +87,7 @@ get '/tweets' => sub {
     return $c->render(
         text => $c->to_text(
             'select to_mention(nick,url),to_rfc3339(tweets.timestamp),tweet'
-              . ' from tweets join users on tweets.user == users.id where tweet like ? order by tweets.timestamp desc limit 20',
+              . ' from tweets join users on tweets.user_id == users.user_id where tweet like ? order by tweets.timestamp desc limit 20',
             "%$query%"
         )
     );
@@ -101,7 +101,7 @@ get '/mentions' => sub {
     return $c->render(
         text => $c->to_text(
             'select to_mention(nick,url),to_rfc3339(tweets.timestamp),tweet'
-              . ' join users on tweets.user == users.id where tweet like ? order by tweets.timestamp desc limit 20',
+              . ' join users on tweets.user_id == users.user_id where tweet like ? order by tweets.timestamp desc limit 20',
             "%@<_% $query>"
         )
     );
@@ -115,7 +115,7 @@ get '/tags/#tag' => sub {
     return $c->render(
         text => $c->to_text(
             'select to_mention(nick,url),to_rfc3339(tweets.timestamp),tweet'
-              . ' join users on tweets.user == users.id where tweet like ? order by tweets.timestamp desc limit 20',
+              . ' join users on tweets.user_id == users.user_id where tweet like ? order by tweets.timestamp desc limit 20',
             "%#$query"
         )
     );
