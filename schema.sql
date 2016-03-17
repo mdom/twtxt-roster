@@ -1,11 +1,11 @@
 CREATE TABLE tweets (
         tweet_id INTEGER PRIMARY KEY,
-        user INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
         tweet TEXT,
         timestamp INTEGER NOT NULL DEFAULT ( strftime('%s','now') ),
         added     INTEGER NOT NULL DEFAULT ( strftime('%s','now') ),
-        FOREIGN KEY(user) REFERENCES users(user_id) ON DELETE CASCADE,
-        CONSTRAINT tweet_user_timestamp UNIQUE ( user,tweet,timestamp )
+        FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+        CONSTRAINT tweet_user_timestamp UNIQUE ( user_id,tweet,timestamp )
 );
 CREATE TABLE users (
         user_id INTEGER PRIMARY KEY,
