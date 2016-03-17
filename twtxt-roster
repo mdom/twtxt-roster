@@ -4,6 +4,8 @@ use warnings;
 use Mojolicious::Lite;
 use Mojo::SQLite;
 use Mojo::Date;
+use Try::Tiny;
+use Mojo::ByteStream 'b';
 
 $ENV{TZ} = 'UTC';
 
@@ -18,33 +20,135 @@ my $config = plugin 'Config' => {
 
 plugin Minion => { SQLite => $config->{minion_db} };
 
+helper find_new_urls => sub {
+    my ( $self, $tweet ) = @_;
+    while ( $tweet =~ m{\@<(?:(\w+) )?(https?://[^>]+)>}g ) {
+        my ( $nick, $url ) = ( $1, $2 );
+        $self->add_user( $nick, $url );
+    }
+    return;
+};
+
+helper add_user => sub {
+    my ( $self, $nick, $url ) = @_;
+    $url = Mojo::URL->new($url);
+    return if $url->scheme !~ /^https?/;
+
+    ## If url scheme is https and there is already an url with the same http address
+    ## just update the http address to https
+    if ( $url->scheme eq 'https' ) {
+        my $http_url = $url->clone->scheme('http');
+        return
+          if $self->sql->db->query( 'update users set url = ? where url is ?',
+            $url, $http_url )->rows;
+    }
+
+    my $https_address = $url->clone->scheme('https');
+    my $result =
+      $self->sql->db->query( 'insert into users ( nick, url ) select ?,? '
+          . 'where not exists (select 1 from users where url in ( ?, ? ))',
+        $nick, $url, $url, $https_address );
+    return if !$result->rows;
+
+    my $id = $result->last_insert_id;
+    $self->minion->enqueue( 'update', [$id], { delay => $config->{delay} } )
+      if defined $id;
+    return;
+};
+
+sub to_date {
+    my ($date) = @_;
+    return if !$date;
+    $date =~ s/T(\d\d:\d\d)([Z+-])/T$1:00$2/;
+    $date =~ s/([+-]\d\d)(\d\d)/$1:$2/;
+    return Mojo::Date->new($date);
+}
+
 app->minion->add_task(
     update => sub {
-        my ( $job, $url ) = @_;
+        my ( $job, $id ) = @_;
+
+        my $db  = $job->app->sql->db;
+        my $log = $job->app->log;
+
+        my $result =
+          $db->query( 'select * from users where user_id is ?', $id )->hash;
+        return if not defined $result;
+        return if not $result->{active};
+        my ( $nick, $url, $last_modified ) =
+          @{$result}{qw( nick url last_modified )};
+
         $job->app->log->debug("Updating $url\n");
-        my $last_modified = $job->app->sql->db->query(
-            'select last_modified from users where url is ?', $url )
-          ->hash->{last_modified};
-        my $tx = $job->app->ua->get($url);
-        if ( my $res = $tx->success ) {
-            for my $line ( split( "\n", $res->body ) ) {
-                my ( $time, $tweet ) = split( "\t", $line, 2 );
-                $time = Mojo::Date->new($time)->epoch;
-                next if !$time;
-                $job->app->sql->db->query(
-                    'insert into tweets (user,timestamp,tweet)'
-                      . ' values ((select id from users where url is ?),?,?)',
-                    $url, $time, $tweet );
+
+        $log->debug("Update for unknown user $url. Skipping\n")
+          if !$result;
+
+        $last_modified = Mojo::Date->new($last_modified)->to_string
+          if $last_modified;
+
+        my $params =
+          $last_modified
+          ? { 'If-Modified-Since' => $last_modified }
+          : {};
+
+        my $tx = $job->app->ua->get( $url, $params );
+
+        try {
+            $log->debug("Try $url\n");
+            my $res = $tx->success;
+            die $tx->error->{message} if !$res;
+
+            $job->app->log->debug("Success $url\n");
+
+            if ( $res->code == 301 || $res->code == 307 ) {
+                $db->query( 'delete from users where url is ?', $url );
+                $job->app->add_user( $nick, $res->headers->location );
+                return;
             }
-            if ( $res->headers->last_modified ) {
-                $job->app->sql->db->query(
-                    'update users set last_modified = ? where url is ?',
-                    $res->headers->last_modified, $url );
+            elsif ( $res->code == 200 ) {
+                my $now = Mojo::Date->new();
+                for my $line ( split( "\n", b( $res->body )->decode ) ) {
+                    next if $line =~ m/^\s*$/;
+                    my ( $time, $tweet ) = split( "\t", $line, 2 );
+
+                    $time = to_date($time);
+
+                    die "Unparsable line $line\n"
+                      if !defined $time || !defined $tweet;
+
+                    next if $time->epoch > $now->epoch;
+
+                    try {
+                        $db->query(
+                            'insert into tweets (user,timestamp,tweet)'
+                              . ' values ((select user_id from users where url is ?),?,?)',
+                            $url, $time->epoch, $tweet );
+                        $job->app->find_new_urls($tweet);
+                    };
+
+                }
+
+                if ( $res->headers->last_modified ) {
+                    my $date = Mojo::Date->new( $res->headers->last_modified );
+                    if ( defined $date ) {
+                        $db->query(
+                            'update users set last_modified = ? where url is ?',
+                            $date->epoch, $url
+                        );
+                    }
+                }
             }
 
+            $job->app->minion->enqueue( 'update', [$id], { delay => 60 } );
+
         }
-        $job->app->log->debug("Enqueue $url\n");
-        $job->app->minion->enqueue( 'update', [$url], { delay => 60 } );
+        catch {
+            $log->debug("Error: $_");
+            $db->query(
+                'update users set active = 0, last_error = ? where url is ?',
+                $_, $url );
+
+        };
         return;
     }
 );
@@ -128,12 +232,7 @@ post '/users' => sub {
     my ( $url, $nick ) = ( $c->param('url'), $c->param('nickname') );
     return $c->render( text => 'Oops.', status => 400 )
       if !$url || !$nick;
-    eval {
-        $c->sql->db->query( 'insert into users ( nick, url ) values (?,?)',
-            $nick, $url );
-        $c->minion->enqueue( 'update', [$url], { delay => 60 } );
-    };
-    $c->log->debug("$@") if $@;
+    $c->add_user( $nick, $url );
     return $c->render( text => 'Ok.', status => 200 );
 };
 
