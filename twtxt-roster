@@ -124,7 +124,7 @@ app->minion->add_task(
 
                     try {
                         $db->query(
-                            'insert into tweets (user,timestamp,tweet)'
+                            'insert into tweets (user_id,timestamp,tweet)'
                               . ' values ((select user_id from users where url is ?),?,?)',
                             $url, $time->epoch, $tweet );
                         $job->app->find_new_urls($tweet);
@@ -190,7 +190,7 @@ get '/users' => sub {
 
 my $find_tweets_sql = <<EOF;
   select to_mention(nick,url),to_rfc3339(tweets.timestamp),tweet
-    from tweets join users on tweets.user_id == users.user_idx
+    from tweets join users on tweets.user_id == users.user_id
     where tweet like ?
     order by tweets.timestamp desc limit 20 offset ?
 EOF
