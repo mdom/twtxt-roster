@@ -188,45 +188,42 @@ get '/users' => sub {
     );
 };
 
+my $find_tweets_sql = <<EOF;
+  select to_mention(nick,url),to_rfc3339(tweets.timestamp),tweet
+    from tweets join users on tweets.user_id == users.user_idx
+    where tweet like ?
+    order by tweets.timestamp desc limit 20 offset ?
+EOF
+
 get '/tweets' => sub {
-    my $c     = shift;
-    my $query = $c->param('q') || '%';
-    my @data  = @{ [] };
+    my $c      = shift;
+    my $query  = $c->param('q') || '%';
+    my $offset = $c->param('page') > 0 ? $c->param('page') * 20 : 0;
+    my @data   = @{ [] };
     return $c->render(
-        text => $c->to_text(
-            'select to_mention(nick,url),to_rfc3339(tweets.timestamp),tweet'
-              . ' from tweets join users on tweets.user_id == users.user_id where tweet like ? order by tweets.timestamp desc limit 20',
-            "%$query%"
-        )
-    );
+        text => $c->to_text( $find_tweets_sql, "%$query%", $offset ) );
 };
 
 get '/mentions' => sub {
-    my $c     = shift;
-    my $query = $c->param('url');
+    my $c      = shift;
+    my $query  = $c->param('url');
+    my $page   = $c->param('page');
+    my $offset = $c->param('page') > 0 ? $c->param('page') * 20 : 0;
     return $c->render( status => 400, text => '`url` must be provided.' )
       if !$query;
     return $c->render(
-        text => $c->to_text(
-            'select to_mention(nick,url),to_rfc3339(tweets.timestamp),tweet'
-              . ' join users on tweets.user_id == users.user_id where tweet like ? order by tweets.timestamp desc limit 20',
-            "%@<_% $query>"
-        )
-    );
+        text => $c->to_text( $find_tweets_sql, "%@<_% $query>", $offset ) );
 };
 
 get '/tags/#tag' => sub {
-    my $c     = shift;
-    my $query = $c->param('tag');
+    my $c      = shift;
+    my $query  = $c->param('tag');
+    my $page   = $c->param('page');
+    my $offset = $c->param('page') > 0 ? $c->param('page') * 20 : 0;
     return $c->render( status => 400, text => '`tag` must be provided.' )
       if !$query;
     return $c->render(
-        text => $c->to_text(
-            'select to_mention(nick,url),to_rfc3339(tweets.timestamp),tweet'
-              . ' join users on tweets.user_id == users.user_id where tweet like ? order by tweets.timestamp desc limit 20',
-            "%#$query"
-        )
-    );
+        text => $c->to_text( $find_tweets_sql, "%#$query", $offset ) );
 };
 
 post '/users' => sub {
