@@ -175,6 +175,13 @@ helper to_text => sub {
       ->arrays->map( sub { join( "\t", @$_ ) } )->join("\n");
 };
 
+helper offset => sub {
+    my $c      = shift;
+    my $page   = $c->param('page');
+    my $offset = $page && $page > 0 ? ($page - 1) * 20 : 0;
+    return $offset;
+};
+
 under '/api/:format/' => { format => ['plain'] };
 
 get '/users' => sub {
@@ -182,8 +189,8 @@ get '/users' => sub {
     my $query = $c->param('q') || '%';
     return $c->render(
         text => $c->to_text(
-            'SELECT url,to_rfc3339(timestamp),nick FROM users WHERE url LIKE ?',
-            $query
+            'SELECT url,to_rfc3339(timestamp),nick FROM users WHERE url LIKE ? ORDER BY url LIMIT 20 OFFSET ?',
+            $query, $c->offset
         )
     );
 };
@@ -198,32 +205,27 @@ EOF
 get '/tweets' => sub {
     my $c      = shift;
     my $query  = $c->param('q') || '%';
-    my $offset = $c->param('page') > 0 ? $c->param('page') * 20 : 0;
     my @data   = @{ [] };
     return $c->render(
-        text => $c->to_text( $find_tweets_sql, "%$query%", $offset ) );
+        text => $c->to_text( $find_tweets_sql, "%$query%", $c->offset ) );
 };
 
 get '/mentions' => sub {
     my $c      = shift;
     my $query  = $c->param('url');
-    my $page   = $c->param('page');
-    my $offset = $c->param('page') > 0 ? $c->param('page') * 20 : 0;
     return $c->render( status => 400, text => '`url` must be provided.' )
       if !$query;
     return $c->render(
-        text => $c->to_text( $find_tweets_sql, "%@<_% $query>", $offset ) );
+        text => $c->to_text( $find_tweets_sql, "%@<_% $query>", $c->offset ) );
 };
 
 get '/tags/#tag' => sub {
     my $c      = shift;
     my $query  = $c->param('tag');
-    my $page   = $c->param('page');
-    my $offset = $c->param('page') > 0 ? $c->param('page') * 20 : 0;
     return $c->render( status => 400, text => '`tag` must be provided.' )
       if !$query;
     return $c->render(
-        text => $c->to_text( $find_tweets_sql, "%#$query", $offset ) );
+        text => $c->to_text( $find_tweets_sql, "%#$query", $c->offset ) );
 };
 
 post '/users' => sub {
