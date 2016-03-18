@@ -20,7 +20,7 @@ my $config = plugin 'Config' => {
 
 plugin Minion => { SQLite => $config->{minion_db} };
 
-app->types->type(plain => 'text/plain;charset=UTF-8');
+app->types->type( plain => 'text/plain;charset=UTF-8' );
 
 helper find_new_urls => sub {
     my ( $self, $tweet ) = @_;
@@ -48,10 +48,10 @@ helper add_user => sub {
     my $https_address = $url->clone->scheme('https');
     my $result        = $self->sql->db->query(
         q{
-	   insert into users ( nick, url )
-       	       select ?,? where not exists
-	          (select 1 from users where url in ( ?, ? ))
-	 },
+           insert into users ( nick, url )
+             select ?,? where not exists
+              (select 1 from users where url in ( ?, ? ))
+     },
         $nick, $url, $url, $https_address
     );
     return if !$result->rows;
@@ -171,10 +171,9 @@ helper sql => sub {
 helper offset => sub {
     my $c      = shift;
     my $page   = $c->param('page');
-    my $offset = $page && $page > 0 ? ($page - 1) * 20 : 0;
+    my $offset = $page && $page > 0 ? ( $page - 1 ) * 20 : 0;
     return $offset;
 };
-
 
 my $find_users_sql = <<EOF;
   SELECT url,to_rfc3339(timestamp) as time, nick FROM users
@@ -183,9 +182,9 @@ EOF
 
 my $find_tweets_base = <<EOF;
     from tweets join users on tweets.user_id == users.user_id
-    where tweet 
-	    like ? 
-	and case when ? then 1 else is_bot is 0 end
+    where
+          tweet like ?
+      and case when ? then 1 else is_bot is 0 end
     order by tweets.timestamp desc limit 20 offset ?
 EOF
 
@@ -199,8 +198,7 @@ my $find_tweets_2_0 = <<EOF;
   $find_tweets_base
 EOF
 
-
-under '/api/:format/' => [ format => ['plain','json'] ];
+under '/api/:format/' => [ format => [ 'plain', 'json' ] ];
 
 helper respond_to_api => sub {
     my ( $c, $sql, @bind_values ) = @_;
@@ -289,7 +287,7 @@ __DATA__
 
     </head>
     <body>
-    
+
 % for my $tweet ( $tweets->each ) {
 <div class="columns">
 <div class="column is-offset-4 is-quarter">
