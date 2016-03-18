@@ -170,8 +170,8 @@ helper sql => sub {
 };
 
 helper to_text => sub {
-    my ( $c, $sql, $query ) = @_;
-    $c->sql->db->query( $sql, $query )
+    my ( $c, $sql, @bind_values ) = @_;
+    $c->sql->db->query( $sql, @bind_values )
       ->arrays->map( sub { join( "\t", @$_ ) } )->join("\n");
 };
 
