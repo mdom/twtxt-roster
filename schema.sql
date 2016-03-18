@@ -14,6 +14,7 @@ CREATE TABLE users (
         timestamp INTEGER NOT NULL DEFAULT ( strftime('%s','now') ),
 	last_modified TEXT,
 	active INTEGER DEFAULT 1,
-	last_error TEXT
+	last_error TEXT,
+	is_bot INTEGER DEFAULT 0
 );
 

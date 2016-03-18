@@ -185,7 +185,9 @@ EOF
 
 my $find_tweets_base = <<EOF;
     from tweets join users on tweets.user_id == users.user_id
-    where tweet like ?
+    where tweet 
+	    like ? 
+	and case when ? then 1 else is_bot is 0 end
     order by tweets.timestamp desc limit 20 offset ?
 EOF
 
@@ -223,25 +225,31 @@ get '/users' => sub {
 };
 
 get '/tweets' => sub {
-    my $c = shift;
-    my $query = $c->param('q') || '%';
-    return $c->respond_to_api( $find_tweets_1_0, "%$query%", $c->offset );
+    my $c            = shift;
+    my $query        = $c->param('q') || '%';
+    my $display_bots = $c->param('display_bots') || 0;
+    return $c->respond_to_api( $find_tweets_1_0, "%$query%", $display_bots,
+        $c->offset );
 };
 
 get '/mentions' => sub {
-    my $c      = shift;
-    my $query  = $c->param('url');
+    my $c            = shift;
+    my $query        = $c->param('url');
+    my $display_bots = $c->param('display_bots') || 0;
     return $c->render( status => 400, text => '`url` must be provided.' )
       if !$query;
-    return $c->respond_to_api( $find_tweets_1_0, "%@<_% $query>", $c->offset );
+    return $c->respond_to_api( $find_tweets_1_0, "%@<_% $query>",
+        $display_bots, $c->offset );
 };
 
 get '/tags/#tag' => sub {
-    my $c      = shift;
-    my $query  = $c->param('tag');
+    my $c            = shift;
+    my $query        = $c->param('tag');
+    my $display_bots = $c->param('display_bots') || 0;
     return $c->render( status => 400, text => '`tag` must be provided.' )
       if !$query;
-    return $c->respond_to_api( $find_tweets_1_0, "%#$query", $c->offset );
+    return $c->respond_to_api( $find_tweets_1_0, "%#$query", $display_bots,
+        $c->offset );
 };
 
 post '/users' => sub {
@@ -259,8 +267,10 @@ under;
 
 get '/' => sub {
     my $c = shift;
-    $c->stash( tweets =>
-          $c->sql->db->query( $find_tweets_2_0, '%', 0 )->hashes );
+    my $display_bots = $c->param('display_bots') || 0;
+    $c->stash(
+        tweets => $c->sql->db->query( $find_tweets_2_0, '%', $display_bots, 0 )
+          ->hashes );
 } => 'index';
 
 app->start;
