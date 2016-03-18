@@ -24,7 +24,7 @@ app->types->type(plain => 'text/plain;charset=UTF-8');
 
 helper find_new_urls => sub {
     my ( $self, $tweet ) = @_;
-    while ( $tweet =~ m{\@<(?:(\w+) )?(https?://[^>]+)>}g ) {
+    while ( $tweet =~ m{\@<(\w+) (https?://[^>]+)>}g ) {
         my ( $nick, $url ) = ( $1, $2 );
         $self->add_user( $nick, $url );
     }
