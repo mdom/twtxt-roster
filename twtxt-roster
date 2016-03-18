@@ -86,8 +86,6 @@ app->minion->add_task(
 
         $job->app->log->debug("Updating $url");
 
-        $log->debug("Update for unknown user $url. Skipping")
-          if !$result;
 
         $last_modified = Mojo::Date->new($last_modified)->to_string
           if $last_modified;
