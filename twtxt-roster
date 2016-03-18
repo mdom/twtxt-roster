@@ -124,7 +124,8 @@ app->minion->add_task(
                         $db->query(
                             'insert into tweets (user_id,timestamp,tweet)'
                               . ' values ((select user_id from users where url is ?),?,?)',
-                            $url, $time->epoch, $tweet );
+                            $url, $time->epoch, substr( $tweet, 0, 1024 )
+                        );
                         $job->app->find_new_urls($tweet);
                     };
 
