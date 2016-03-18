@@ -245,4 +245,53 @@ post '/users' => sub {
     return $c->render( text => 'Ok.', status => 200 );
 };
 
+under;
+
+get '/' => sub {
+    my $c = shift;
+    $c->stash( tweets =>
+          $c->sql->db->query( $find_tweets_sql, '%', 0 )->hashes );
+} => 'index';
+
 app->start;
+
+__DATA__
+
+@@ index.html.ep
+
+<!doctype html>
+<html lang="">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>twtxt roster</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.0.16/css/bulma.min.css">
+
+    </head>
+    <body>
+    
+% for my $tweet ( $tweets->each ) {
+<div class="columns">
+<div class="column is-offset-4 is-quarter">
+	<div class="box">
+	  <article class="media">
+	    <div class="media-content">
+	      <div class="content">
+		<p>
+		  <strong><%= $tweet->{user} %></strong><small> <%= $tweet->{time} %></small>
+		  <br>
+		  <%= $tweet->{tweet} %>
+		</p>
+	      </div>
+	    </div>
+	  </article>
+	</div>
+</div>
+</div>
+% }
+
+    </body>
+</html>
