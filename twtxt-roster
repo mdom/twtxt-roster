@@ -183,12 +183,22 @@ my $find_users_sql = <<EOF;
     WHERE url LIKE ? ORDER BY url LIMIT 20 OFFSET ?
 EOF
 
-my $find_tweets_sql = <<EOF;
-  select to_mention(nick,url) as user,to_rfc3339(tweets.timestamp) as time,tweet
+my $find_tweets_base = <<EOF;
     from tweets join users on tweets.user_id == users.user_id
     where tweet like ?
     order by tweets.timestamp desc limit 20 offset ?
 EOF
+
+my $find_tweets_1_0 = <<EOF;
+  select to_mention(nick,url) as user,to_rfc3339(tweets.timestamp) as time, tweet
+  $find_tweets_base
+EOF
+
+my $find_tweets_2_0 = <<EOF;
+  select nick, url ,to_rfc3339(tweets.timestamp) as time, tweet
+  $find_tweets_base
+EOF
+
 
 under '/api/:format/' => [ format => ['plain','json'] ];
 
@@ -215,7 +225,7 @@ get '/users' => sub {
 get '/tweets' => sub {
     my $c = shift;
     my $query = $c->param('q') || '%';
-    return $c->respond_to_api( $find_tweets_sql, "%$query%", $c->offset );
+    return $c->respond_to_api( $find_tweets_1_0, "%$query%", $c->offset );
 };
 
 get '/mentions' => sub {
@@ -223,7 +233,7 @@ get '/mentions' => sub {
     my $query  = $c->param('url');
     return $c->render( status => 400, text => '`url` must be provided.' )
       if !$query;
-    return $c->respond_to_api( $find_tweets_sql, "%@<_% $query>", $c->offset );
+    return $c->respond_to_api( $find_tweets_1_0, "%@<_% $query>", $c->offset );
 };
 
 get '/tags/#tag' => sub {
@@ -231,7 +241,7 @@ get '/tags/#tag' => sub {
     my $query  = $c->param('tag');
     return $c->render( status => 400, text => '`tag` must be provided.' )
       if !$query;
-    return $c->respond_to_api( $find_tweets_sql, "%#$query", $c->offset );
+    return $c->respond_to_api( $find_tweets_1_0, "%#$query", $c->offset );
 };
 
 post '/users' => sub {
@@ -250,7 +260,7 @@ under;
 get '/' => sub {
     my $c = shift;
     $c->stash( tweets =>
-          $c->sql->db->query( $find_tweets_sql, '%', 0 )->hashes );
+          $c->sql->db->query( $find_tweets_2_0, '%', 0 )->hashes );
 } => 'index';
 
 app->start;
@@ -281,7 +291,7 @@ __DATA__
 	    <div class="media-content">
 	      <div class="content">
 		<p>
-		  <strong><%= $tweet->{user} %></strong><small> <%= $tweet->{time} %></small>
+		  <a href="<%= $tweet->{url} %>"><strong><%= $tweet->{nick} %></strong></a> <small><%= $tweet->{time} %></small>
 		  <br>
 		  <%= $tweet->{tweet} %>
 		</p>
