@@ -86,13 +86,11 @@ app->minion->add_task(
 
         $job->app->log->debug("Updating $url");
 
-
-        $last_modified = Mojo::Date->new($last_modified)->to_string
-          if $last_modified;
+        $last_modified = Mojo::Date->new($last_modified) if $last_modified;
 
         my $params =
           $last_modified
-          ? { 'If-Modified-Since' => $last_modified }
+          ? { 'If-Modified-Since' => $last_modified->to_string }
           : {};
 
         my $tx = $job->app->ua->get( $url, $params );
