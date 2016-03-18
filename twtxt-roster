@@ -159,22 +159,15 @@ app->minion->add_task(
     }
 );
 
-my $sql;
 helper sql => sub {
-    if ( !$sql ) {
-        $sql = Mojo::SQLite->new( $config->{registry_db} );
+    state $sql = do {
+        my $sql = Mojo::SQLite->new( $config->{registry_db} );
         $sql->db->dbh->sqlite_create_function( 'to_rfc3339', 1,
             sub { Mojo::Date->new(shift)->to_datetime } );
         $sql->db->dbh->sqlite_create_function( 'to_mention', 2,
             sub { "@<$_[0] $_[1]>" } );
-    }
-    return $sql;
-};
-
-helper to_text => sub {
-    my ( $c, $sql, @bind_values ) = @_;
-    $c->sql->db->query( $sql, @bind_values )
-      ->arrays->map( sub { join( "\t", @$_ ) } )->join("\n");
+        $sql;
+    };
 };
 
 helper offset => sub {
@@ -186,32 +179,43 @@ helper offset => sub {
 
 
 my $find_users_sql = <<EOF;
-  SELECT url,to_rfc3339(timestamp),nick FROM users
+  SELECT url,to_rfc3339(timestamp) as time, nick FROM users
     WHERE url LIKE ? ORDER BY url LIMIT 20 OFFSET ?
 EOF
 
 my $find_tweets_sql = <<EOF;
-  select to_mention(nick,url),to_rfc3339(tweets.timestamp),tweet
+  select to_mention(nick,url) as user,to_rfc3339(tweets.timestamp) as time,tweet
     from tweets join users on tweets.user_id == users.user_id
     where tweet like ?
     order by tweets.timestamp desc limit 20 offset ?
 EOF
 
-under '/api/:format/' => { format => ['plain'] };
+under '/api/:format/' => [ format => ['plain','json'] ];
+
+helper respond_to_api => sub {
+    my ( $c, $sql, @bind_values ) = @_;
+    return $c->respond_to(
+        plain => sub {
+            $c->render( text => $c->sql->db->query( $sql, @bind_values )
+                  ->arrays->map( sub { join( "\t", @$_ ) } )->join("\n") );
+        },
+        json => sub {
+            $c->render(
+                json => $c->sql->db->query( $sql, @bind_values )->hashes );
+        },
+    );
+};
 
 get '/users' => sub {
     my $c = shift;
     my $query = $c->param('q') || '%';
-    return $c->render(
-        text => $c->to_text( $find_users_sql, $query, $c->offset ) );
+    return $c->respond_to_api( $find_users_sql, $query, $c->offset );
 };
 
 get '/tweets' => sub {
-    my $c      = shift;
-    my $query  = $c->param('q') || '%';
-    my @data   = @{ [] };
-    return $c->render(
-        text => $c->to_text( $find_tweets_sql, "%$query%", $c->offset ) );
+    my $c = shift;
+    my $query = $c->param('q') || '%';
+    return $c->respond_to_api( $find_tweets_sql, "%$query%", $c->offset );
 };
 
 get '/mentions' => sub {
@@ -219,8 +223,7 @@ get '/mentions' => sub {
     my $query  = $c->param('url');
     return $c->render( status => 400, text => '`url` must be provided.' )
       if !$query;
-    return $c->render(
-        text => $c->to_text( $find_tweets_sql, "%@<_% $query>", $c->offset ) );
+    return $c->respond_to_api( $find_tweets_sql, "%@<_% $query>", $c->offset );
 };
 
 get '/tags/#tag' => sub {
@@ -228,8 +231,7 @@ get '/tags/#tag' => sub {
     my $query  = $c->param('tag');
     return $c->render( status => 400, text => '`tag` must be provided.' )
       if !$query;
-    return $c->render(
-        text => $c->to_text( $find_tweets_sql, "%#$query", $c->offset ) );
+    return $c->respond_to_api( $find_tweets_sql, "%#$query", $c->offset );
 };
 
 post '/users' => sub {
