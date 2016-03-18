@@ -182,18 +182,11 @@ helper offset => sub {
     return $offset;
 };
 
-under '/api/:format/' => { format => ['plain'] };
 
-get '/users' => sub {
-    my $c = shift;
-    my $query = $c->param('q') || '%';
-    return $c->render(
-        text => $c->to_text(
-            'SELECT url,to_rfc3339(timestamp),nick FROM users WHERE url LIKE ? ORDER BY url LIMIT 20 OFFSET ?',
-            $query, $c->offset
-        )
-    );
-};
+my $find_users_sql = <<EOF;
+  SELECT url,to_rfc3339(timestamp),nick FROM users
+    WHERE url LIKE ? ORDER BY url LIMIT 20 OFFSET ?
+EOF
 
 my $find_tweets_sql = <<EOF;
   select to_mention(nick,url),to_rfc3339(tweets.timestamp),tweet
@@ -201,6 +194,15 @@ my $find_tweets_sql = <<EOF;
     where tweet like ?
     order by tweets.timestamp desc limit 20 offset ?
 EOF
+
+under '/api/:format/' => { format => ['plain'] };
+
+get '/users' => sub {
+    my $c = shift;
+    my $query = $c->param('q') || '%';
+    return $c->render(
+        text => $c->to_text( $find_users_sql, $query, $c->offset ) );
+};
 
 get '/tweets' => sub {
     my $c      = shift;
