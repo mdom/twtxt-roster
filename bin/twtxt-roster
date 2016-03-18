@@ -219,6 +219,13 @@ helper respond_to_api => sub {
     );
 };
 
+helper format_tweet => sub {
+	my ($c,$tweet) = @_;
+	$tweet = b($tweet)->xml_escape->to_string;
+	$tweet =~ s{\@&lt;(\w+) ([^>]+)&gt;}{<a href="$2">\@$1</a>}g;
+	return $tweet;
+};
+
 get '/users' => sub {
     my $c = shift;
     my $query = $c->param('q') || '%';
@@ -319,7 +326,7 @@ __DATA__
 		<p>
 		  <a href="<%= $tweet->{url} %>"><strong><%= $tweet->{nick} %></strong></a> <small><%= $tweet->{time} %></small>
 		  <br>
-		  <%= $tweet->{tweet} %>
+		  <%== format_tweet $tweet->{tweet} %>
 		</p>
 	      </div>
 	    </div>
