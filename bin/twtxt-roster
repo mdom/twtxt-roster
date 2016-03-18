@@ -265,7 +265,8 @@ get '/' => sub {
     my $c = shift;
     my $show_bots = $c->param('show_bots') || 0;
     $c->stash( tweets =>
-          $c->sql->db->query( $find_tweets_2_0, '%', $show_bots, 0 )->hashes );
+          $c->sql->db->query( $find_tweets_2_0, '%', $show_bots, $c->offset )
+          ->hashes );
 } => 'index';
 
 app->start;
