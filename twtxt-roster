@@ -44,10 +44,14 @@ helper add_user => sub {
     }
 
     my $https_address = $url->clone->scheme('https');
-    my $result =
-      $self->sql->db->query( 'insert into users ( nick, url ) select ?,? '
-          . 'where not exists (select 1 from users where url in ( ?, ? ))',
-        $nick, $url, $url, $https_address );
+    my $result        = $self->sql->db->query(
+        q{
+	   insert into users ( nick, url )
+       	       select ?,? where not exists
+	          (select 1 from users where url in ( ?, ? ))
+	 },
+        $nick, $url, $url, $https_address
+    );
     return if !$result->rows;
 
     my $id = $result->last_insert_id;
