@@ -169,9 +169,14 @@ helper sql => sub {
 };
 
 helper offset => sub {
-    my $c      = shift;
-    my $page   = $c->param('page');
-    my $offset = $page && $page > 0 ? ( $page - 1 ) * 20 : 0;
+    my $c = shift;
+
+    my $page = $c->param('page') || 1;
+    $page = 1
+      if $page <= 0 || $page !~ /^\d+$/;
+    $c->stash( page => $page );
+
+    my $offset = ( $page - 1 ) * 20;
     return $offset;
 };
 
