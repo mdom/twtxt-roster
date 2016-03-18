@@ -142,7 +142,8 @@ app->minion->add_task(
                 }
             }
 
-            $job->app->minion->enqueue( 'update', [$id], { delay => 60 } );
+            $job->app->minion->enqueue( 'update', [$id],
+                { delay => $config->{delay} } );
 
         }
         catch {
