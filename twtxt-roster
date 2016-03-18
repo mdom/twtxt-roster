@@ -20,6 +20,8 @@ my $config = plugin 'Config' => {
 
 plugin Minion => { SQLite => $config->{minion_db} };
 
+app->types->type(plain => 'text/plain;charset=UTF-8');
+
 helper find_new_urls => sub {
     my ( $self, $tweet ) = @_;
     while ( $tweet =~ m{\@<(?:(\w+) )?(https?://[^>]+)>}g ) {
