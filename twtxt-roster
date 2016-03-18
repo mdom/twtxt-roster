@@ -225,30 +225,30 @@ get '/users' => sub {
 };
 
 get '/tweets' => sub {
-    my $c            = shift;
-    my $query        = $c->param('q') || '%';
-    my $display_bots = $c->param('display_bots') || 0;
-    return $c->respond_to_api( $find_tweets_1_0, "%$query%", $display_bots,
+    my $c         = shift;
+    my $query     = $c->param('q') || '%';
+    my $show_bots = $c->param('show_bots') || 0;
+    return $c->respond_to_api( $find_tweets_1_0, "%$query%", $show_bots,
         $c->offset );
 };
 
 get '/mentions' => sub {
-    my $c            = shift;
-    my $query        = $c->param('url');
-    my $display_bots = $c->param('display_bots') || 0;
+    my $c         = shift;
+    my $query     = $c->param('url');
+    my $show_bots = $c->param('show_bots') || 0;
     return $c->render( status => 400, text => '`url` must be provided.' )
       if !$query;
     return $c->respond_to_api( $find_tweets_1_0, "%@<_% $query>",
-        $display_bots, $c->offset );
+        $show_bots, $c->offset );
 };
 
 get '/tags/#tag' => sub {
-    my $c            = shift;
-    my $query        = $c->param('tag');
-    my $display_bots = $c->param('display_bots') || 0;
+    my $c         = shift;
+    my $query     = $c->param('tag');
+    my $show_bots = $c->param('show_bots') || 0;
     return $c->render( status => 400, text => '`tag` must be provided.' )
       if !$query;
-    return $c->respond_to_api( $find_tweets_1_0, "%#$query", $display_bots,
+    return $c->respond_to_api( $find_tweets_1_0, "%#$query", $show_bots,
         $c->offset );
 };
 
@@ -267,10 +267,9 @@ under;
 
 get '/' => sub {
     my $c = shift;
-    my $display_bots = $c->param('display_bots') || 0;
-    $c->stash(
-        tweets => $c->sql->db->query( $find_tweets_2_0, '%', $display_bots, 0 )
-          ->hashes );
+    my $show_bots = $c->param('show_bots') || 0;
+    $c->stash( tweets =>
+          $c->sql->db->query( $find_tweets_2_0, '%', $show_bots, 0 )->hashes );
 } => 'index';
 
 app->start;
