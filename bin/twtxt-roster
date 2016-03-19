@@ -6,6 +6,7 @@ use Mojo::SQLite;
 use Mojo::Date;
 use Try::Tiny;
 use Mojo::ByteStream 'b';
+use Mojo::JSON 'encode_json';
 
 our $VERSION = '0.01';
 
@@ -131,6 +132,16 @@ app->minion->add_task(
                             $url, $time->epoch, substr( $tweet, 0, 1024 )
                         );
                         $job->app->find_new_urls($tweet);
+                        $job->app->sql->pubsub->notify(
+                            'new_tweet' => encode_json(
+                                {
+                                    tweet => $tweet,
+                                    time  => $time->to_datetime,
+                                    url   => $url,
+                                    nick  => $nick
+                                }
+                            )
+                        );
                     };
 
                 }
@@ -285,6 +296,23 @@ get '/' => sub {
           $c->sql->db->query( $find_tweets_2_0, '%', $show_bots, $c->offset )
           ->hashes );
 } => 'index';
+
+websocket '/stream' => sub {
+    my $c = shift;
+    $c->inactivity_timeout(0);
+    $c->sql->pubsub->listen(
+        'new_tweet' => sub {
+            my ( $pubsub, $payload ) = @_;
+            $c->send( { text => $payload } );
+        }
+    );
+    $c->on(
+        finish => sub {
+            my ( $c, $code, $reason ) = @_;
+            $c->app->log->debug("WebSocket closed with status $code");
+        }
+    );
+};
 
 app->start;
 
