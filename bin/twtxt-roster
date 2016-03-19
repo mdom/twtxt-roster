@@ -224,10 +224,11 @@ helper respond_to_api => sub {
 };
 
 helper format_tweet => sub {
-	my ($c,$tweet) = @_;
-	#$tweet = b($tweet)->xml_escape->to_string;
-	$tweet =~ s{\@&lt;(\w+) ([^>]+)&gt;}{<a href="$2">\@$1</a>}g;
-	return $tweet;
+    my ( $c, $tweet ) = @_;
+
+    $tweet = b($tweet)->xml_escape->to_string;
+    $tweet =~ s{\@&lt;(\w+) (https?://.+?)&gt;}{<a href="$2">\@$1</a>}g;
+    return $tweet;
 };
 
 get '/users' => sub {
