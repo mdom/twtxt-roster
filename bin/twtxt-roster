@@ -331,7 +331,7 @@ __DATA__
 		<p>
 		  <a href="<%= $tweet->{url} %>"><strong><%= $tweet->{nick} %></strong></a> <small><%= $tweet->{time} %></small>
 		  <br>
-		  <%= format_tweet $tweet->{tweet} %>
+		  <%== format_tweet $tweet->{tweet} %>
 		</p>
 	      </div>
 	    </div>
