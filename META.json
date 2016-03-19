@@ -1,0 +1,65 @@
+{
+   "abstract" : "api and search engine for twtxt",
+   "author" : [
+      "Mario Domgoergen C<< <mario@domgoergen.com> >>"
+   ],
+   "dynamic_config" : 0,
+   "generated_by" : "Dist::Zilla version 5.035, CPAN::Meta::Converter version 2.150001",
+   "license" : [
+      "gpl_3"
+   ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : 2
+   },
+   "name" : "twtxt-roster",
+   "no_index" : {
+      "directory" : [
+         "t",
+         "xt"
+      ]
+   },
+   "prereqs" : {
+      "configure" : {
+         "requires" : {
+            "ExtUtils::MakeMaker" : "0"
+         }
+      },
+      "develop" : {
+         "requires" : {
+            "Test::Pod" : "1.41"
+         }
+      },
+      "runtime" : {
+         "requires" : {
+            "Mojo::ByteStream" : "0",
+            "Mojo::Date" : "0",
+            "Mojo::SQLite" : "0",
+            "Mojolicious" : "6.54",
+            "Mojolicious::Lite" : "0",
+            "Time::Local" : "1.2100",
+            "Try::Tiny" : "0",
+            "strict" : "0",
+            "warnings" : "0"
+         }
+      }
+   },
+   "release_status" : "stable",
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/mdom/twtxt-roster/issues"
+      },
+      "homepage" : "https://github.com/mdom/twtxt-roster",
+      "repository" : {
+         "type" : "git",
+         "url" : "https://github.com/mdom/twtxt-roster.git",
+         "web" : "https://github.com/mdom/twtxt-roster"
+      }
+   },
+   "version" : "0.01",
+   "x_contributors" : [
+      "Mario Domgoergen <mario@domgoergen.com>",
+      "Mario Domgoergen <mdom@taz.de>"
+   ]
+}
+

@@ -7,6 +7,8 @@ use Mojo::Date;
 use Try::Tiny;
 use Mojo::ByteStream 'b';
 
+our $VERSION = '0.01';
+
 $ENV{TZ} = 'UTC';
 
 my $config = plugin 'Config' => {
@@ -79,8 +81,8 @@ app->minion->add_task(
 
         my $result =
           $db->query( 'select * from users where user_id is ?', $id )->hash;
-        return if not defined $result;
-        return if not $result->{active};
+	return if not defined $result;
+	return if not $result->{active};
         my ( $nick, $url, $last_modified ) =
           @{$result}{qw( nick url last_modified )};
 
@@ -114,6 +116,8 @@ app->minion->add_task(
                     my ( $time, $tweet ) = split( "\t", $line, 2 );
 
                     $time = to_date($time);
+		    $job->app->log->debug($tweet);
+		    $job->app->log->debug($time);
 
                     die "Unparsable line $line\n"
                       if !defined $time || !defined $tweet;
@@ -221,7 +225,7 @@ helper respond_to_api => sub {
 
 helper format_tweet => sub {
 	my ($c,$tweet) = @_;
-	$tweet = b($tweet)->xml_escape->to_string;
+	#$tweet = b($tweet)->xml_escape->to_string;
 	$tweet =~ s{\@&lt;(\w+) ([^>]+)&gt;}{<a href="$2">\@$1</a>}g;
 	return $tweet;
 };
@@ -326,7 +330,7 @@ __DATA__
 		<p>
 		  <a href="<%= $tweet->{url} %>"><strong><%= $tweet->{nick} %></strong></a> <small><%= $tweet->{time} %></small>
 		  <br>
-		  <%== format_tweet $tweet->{tweet} %>
+		  <%= format_tweet $tweet->{tweet} %>
 		</p>
 	      </div>
 	    </div>
@@ -367,3 +371,25 @@ __DATA__
 
     </body>
 </html>
+
+__END__
+
+=head1 NAME
+
+twtxt_roster - api and search engine for twtxt
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2015 Mario Domgoergen C<< <mario@domgoergen.com> >>
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program.  If not, see <http://www.gnu.org/licenses/>.
