@@ -295,6 +295,7 @@ get '/' => sub {
     $c->stash( tweets =>
           $c->sql->db->query( $find_tweets_2_0, '%', $show_bots, $c->offset )
           ->hashes );
+    $c->render( status => 404 ) if $c->stash('tweets')->size == 0;
 } => 'index';
 
 websocket '/stream' => sub {
