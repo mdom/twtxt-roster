@@ -80,12 +80,12 @@ app->minion->add_task(
         my $db  = $job->app->sql->db;
         my $log = $job->app->log;
 
-        my $result =
+        my $user =
           $db->query( 'select * from users where user_id is ?', $id )->hash;
-	return if not defined $result;
-	return if not $result->{active};
+        return if not defined $user;
+        return if not $user->{active};
         my ( $nick, $url, $last_modified ) =
-          @{$result}{qw( nick url last_modified )};
+          @{$user}{qw( nick url last_modified )};
 
         $job->app->log->debug("Updating $url");
 
@@ -117,8 +117,8 @@ app->minion->add_task(
                     my ( $time, $tweet ) = split( "\t", $line, 2 );
 
                     $time = to_date($time);
-		    $job->app->log->debug($tweet);
-		    $job->app->log->debug($time);
+                    $job->app->log->debug($tweet);
+                    $job->app->log->debug($time);
 
                     die "Unparsable line $line\n"
                       if !defined $time || !defined $tweet;
@@ -135,10 +135,11 @@ app->minion->add_task(
                         $job->app->sql->pubsub->notify(
                             'new_tweet' => encode_json(
                                 {
-                                    tweet => $tweet,
-                                    time  => $time->to_datetime,
-                                    url   => $url,
-                                    nick  => $nick
+                                    tweet  => $tweet,
+                                    time   => $time->to_datetime,
+                                    url    => $url,
+                                    nick   => $nick,
+                                    is_bot => $user->{is_bot},
                                 }
                             )
                         );
