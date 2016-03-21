@@ -10,6 +10,17 @@ use Mojo::JSON 'encode_json';
 
 our $VERSION = '0.01';
 
+my $http_re;
+
+BEGIN {
+    try {
+        require Regexp::Common;
+        Regexp::Common->import('URI');
+        no warnings 'once';
+        $http_re = $::RE{URI}{HTTP}{ -scheme => qr/https?/ }{ -keep => 1 };
+    };
+}
+
 $ENV{TZ} = 'UTC';
 
 my $config = plugin 'Config' => {
@@ -240,6 +251,10 @@ helper format_tweet => sub {
 
     $tweet = b($tweet)->xml_escape->to_string;
     $tweet =~ s{\@&lt;(\w+) (https?://.+?)&gt;}{<a href="$2">\@$1</a>}g;
+
+    if ($http_re) {
+        $tweet =~ s{(?<!href=")$http_re}{<a href="$1">$1</a>}g;
+    }
     return $tweet;
 };
 
