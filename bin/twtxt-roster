@@ -185,14 +185,7 @@ app->minion->add_task(
 );
 
 helper sql => sub {
-    state $sql = do {
-        my $sql = Mojo::SQLite->new( $config->{registry_db} );
-        $sql->db->dbh->sqlite_create_function( 'to_rfc3339', 1,
-            sub { Mojo::Date->new(shift)->to_datetime } );
-        $sql->db->dbh->sqlite_create_function( 'to_mention', 2,
-            sub { "@<$_[0] $_[1]>" } );
-        $sql;
-    };
+    state $sql = Mojo::SQLite->new( $config->{registry_db} );
 };
 
 helper offset => sub {
@@ -208,7 +201,7 @@ helper offset => sub {
 };
 
 my $find_users_sql = <<EOF;
-  SELECT url,to_rfc3339(timestamp) as time, nick FROM users
+  SELECT url, strftime('%Y-%m-%dT%H:%M:%SZ',timestamp,"unixepoch") as time, nick FROM users
     WHERE url LIKE ? ORDER BY url LIMIT 20 OFFSET ?
 EOF
 
@@ -221,12 +214,12 @@ my $find_tweets_base = <<EOF;
 EOF
 
 my $find_tweets_1_0 = <<EOF;
-  select to_mention(nick,url) as user,to_rfc3339(tweets.timestamp) as time, tweet
+  select "@<"||nick||" "||url||">" as user, strftime('%Y-%m-%dT%H:%M:%SZ',tweets.timestamp,"unixepoch") as time, tweet
   $find_tweets_base
 EOF
 
 my $find_tweets_2_0 = <<EOF;
-  select nick, url ,to_rfc3339(tweets.timestamp) as time, tweet
+  select nick, url ,strftime('%Y-%m-%dT%H:%M:%SZ',tweets.timestamp,"unixepoch") as time, tweet
   $find_tweets_base
 EOF
 
