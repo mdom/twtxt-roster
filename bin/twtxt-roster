@@ -319,6 +319,7 @@ websocket '/stream' => sub {
     $c->on(
         finish => sub {
             my ( $c, $code, $reason ) = @_;
+            $c->sql->pubsub->unlisten('new_tweet');
             $c->app->log->debug("WebSocket closed with status $code");
         }
     );
