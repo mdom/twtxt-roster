@@ -125,7 +125,8 @@ app->minion->add_task(
                 my $now = Mojo::Date->new();
                 for my $line ( split( "\n", b( $res->body )->decode ) ) {
                     next if $line =~ m/^\s*$/;
-                    my ( $time, $tweet ) = split( "\t", $line, 2 );
+                    my ( $time, $sep, $tweet ) = $line =~ /(.*?)(\s+|#)(.*)/;
+                    next if $sep eq '#';
 
                     $time = to_date($time);
                     $job->app->log->debug($tweet);
