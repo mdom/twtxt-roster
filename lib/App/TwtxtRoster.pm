@@ -30,6 +30,7 @@ sub startup {
     );
 
     $self->plugin( minion => { SQLite => $config->{minion_db} } );
+    $self->plugin('App::TwtxtRoster::Task::Update');
 
     $self->types->type( plain => 'text/plain;charset=UTF-8' );
 
@@ -86,113 +87,6 @@ sub startup {
             $date =~ s/T(\d\d:\d\d)([Z+-])/T$1:00$2/;
             $date =~ s/([+-]\d\d)(\d\d)/$1:$2/;
             return Mojo::Date->new($date);
-        }
-    );
-
-    $self->minion->add_task(
-        update => sub {
-            my ( $job, $id ) = @_;
-
-            my $db  = $job->app->sql->db;
-            my $log = $job->app->log;
-
-            my $user =
-              $db->query( 'select * from users where user_id is ?', $id )->hash;
-            return if not defined $user;
-            return if not $user->{active};
-            my ( $nick, $url, $last_modified ) =
-              @{$user}{qw( nick url last_modified )};
-
-            $job->app->log->debug("Updating $url");
-
-            $last_modified = Mojo::Date->new($last_modified)
-              if $last_modified;
-
-            my $params =
-              $last_modified
-              ? { 'If-Modified-Since' => $last_modified->to_string }
-              : {};
-
-            my $tx = $job->app->ua->get( $url, $params );
-
-            try {
-                $log->debug("Try $url");
-                my $res = $tx->success;
-                die $tx->error->{message} if !$res;
-
-                $job->app->log->debug("Success $url");
-
-                if ( $res->code == 301 || $res->code == 307 ) {
-                    $db->query( 'delete from users where url is ?', $url );
-                    $job->app->add_user( $nick, $res->headers->location );
-                    return;
-                }
-                elsif ( $res->code == 200 ) {
-                    my $now = Mojo::Date->new();
-                    for my $line ( split( "\n", b( $res->body )->decode ) ) {
-                        next if $line =~ m/^\s*$/;
-                        my ( $time, $sep, $tweet ) =
-                          $line =~ /(.*?)(\s+|#)(.*)/;
-                        next if $sep eq '#';
-
-                        $time = $job->app->to_date($time);
-                        $job->app->log->debug($tweet);
-                        $job->app->log->debug($time);
-
-                        die "Unparsable line $line\n"
-                          if !defined $time || !defined $tweet;
-
-                        next if $time->epoch > $now->epoch;
-
-                        try {
-                            $db->query(
-                                'insert into tweets (user_id,timestamp,tweet)'
-                                  . ' values ((select user_id from users where url is ?),?,?)',
-                                $url,
-                                $time->epoch,
-                                substr( $tweet, 0, 1024 )
-                            );
-                            $job->app->find_new_urls($tweet);
-                            $job->app->sql->pubsub->notify(
-                                'new_tweet' => encode_json(
-                                    {
-                                        tweet  => $tweet,
-                                        time   => $time->to_datetime,
-                                        url    => $url,
-                                        nick   => $nick,
-                                        is_bot => $user->{is_bot},
-                                    }
-                                )
-                            );
-                        };
-
-                    }
-
-                    if ( $res->headers->last_modified ) {
-                        my $date =
-                          Mojo::Date->new( $res->headers->last_modified );
-                        if ( defined $date ) {
-                            $db->query(
-'update users set last_modified = ? where url is ?',
-                                $date->epoch, $url
-                            );
-                        }
-                    }
-                }
-
-                $job->app->minion->enqueue( 'update', [$id],
-                    { delay => $config->{delay} } );
-
-            }
-            catch {
-                $log->debug("Error: $_");
-                $db->query(
-'update users set active = 0, last_error = ? where url is ?',
-                    $_, $url
-                );
-
-            };
-            return;
         }
     );
 
