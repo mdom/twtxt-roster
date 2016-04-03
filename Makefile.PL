@@ -12,18 +12,22 @@ my %WriteMakefileArgs = (
   "CONFIGURE_REQUIRES" => {
     "ExtUtils::MakeMaker" => 0
   },
-  "DISTNAME" => "twtxt-roster",
+  "DISTNAME" => "App-TwtxtRoster",
   "EXE_FILES" => [
     "bin/twtxt-roster"
   ],
   "LICENSE" => "gpl",
-  "NAME" => "twtxt::roster",
+  "NAME" => "App::TwtxtRoster",
   "PREREQ_PM" => {
+    "FindBin" => 0,
+    "Mojo::Base" => 0,
     "Mojo::ByteStream" => 0,
     "Mojo::Date" => 0,
+    "Mojo::JSON" => 0,
     "Mojo::SQLite" => 0,
     "Mojolicious" => "6.54",
-    "Mojolicious::Lite" => 0,
+    "Mojolicious::Commands" => 0,
+    "Regexp::Common" => 0,
     "Time::Local" => "1.2100",
     "Try::Tiny" => 0,
     "strict" => 0,
@@ -38,11 +42,15 @@ my %WriteMakefileArgs = (
 
 my %FallbackPrereqs = (
   "ExtUtils::MakeMaker" => 0,
+  "FindBin" => 0,
+  "Mojo::Base" => 0,
   "Mojo::ByteStream" => 0,
   "Mojo::Date" => 0,
+  "Mojo::JSON" => 0,
   "Mojo::SQLite" => 0,
   "Mojolicious" => "6.54",
-  "Mojolicious::Lite" => 0,
+  "Mojolicious::Commands" => 0,
+  "Regexp::Common" => 0,
   "Time::Local" => "1.2100",
   "Try::Tiny" => 0,
   "strict" => 0,
