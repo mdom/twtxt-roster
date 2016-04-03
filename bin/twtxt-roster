@@ -224,18 +224,23 @@ my $find_tweets_2_0 = <<EOF;
   $find_tweets_base
 EOF
 
-under '/api/:format/' => [ format => [ 'plain', 'json' ] ];
+under '/api/:format/' => [ format => [ 'plain', 'json', 'html' ] ];
 
 helper respond_to_api => sub {
     my ( $c, $sql, @bind_values ) = @_;
+    $c->stash( template => $c->current_route );
+    my $values = $c->sql->db->query( $sql, @bind_values );
     return $c->respond_to(
         plain => sub {
-            $c->render( text => $c->sql->db->query( $sql, @bind_values )
-                  ->arrays->map( sub { join( "\t", @$_ ) } )->join("\n") );
+            $c->render( text =>
+                  $values->arrays->map( sub { join( "\t", @$_ ) } )->join("\n")
+            );
         },
         json => sub {
-            $c->render(
-                json => $c->sql->db->query( $sql, @bind_values )->hashes );
+            $c->render( json => $values->hashes );
+        },
+        any => sub {
+            $c->render( template => 'index', tweets => $values->hashes );
         },
     );
 };
@@ -245,6 +250,11 @@ helper format_tweet => sub {
 
     $tweet = b($tweet)->xml_escape->to_string;
     $tweet =~ s{\@&lt;(\w+) (https?://.+?)&gt;}{<a href="$2">\@$1</a>}g;
+
+    $tweet =~ s{#(\w+)}
+               {  '<a href="'
+		. $c->url_for(tags => tag => $1, format => 'html')
+		. '">#'.$1.'</a>'}ge;
 
     if ($http_re) {
         $tweet =~ s{(?<!href=")$http_re}{<a href="$1">$1</a>}g;
@@ -276,7 +286,7 @@ get '/mentions' => sub {
         $show_bots, $c->offset );
 };
 
-get '/tags/#tag' => sub {
+get '/tags/:tag' => sub {
     my $c         = shift;
     my $query     = $c->param('tag');
     my $show_bots = $c->param('show_bots') || 0;
@@ -284,7 +294,7 @@ get '/tags/#tag' => sub {
       if !$query;
     return $c->respond_to_api( $find_tweets_1_0, "%#$query", $show_bots,
         $c->offset );
-};
+} => 'tags';
 
 post '/users' => sub {
     my $c = shift;
