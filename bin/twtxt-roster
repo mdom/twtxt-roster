@@ -251,7 +251,7 @@ helper format_tweet => sub {
     $tweet = b($tweet)->xml_escape->to_string;
     $tweet =~ s{\@&lt;(\w+) (https?://.+?)&gt;}{<a href="$2">\@$1</a>}g;
 
-    $tweet =~ s{#(\w+)}
+    $tweet =~ s{(?<!&)#(\w+)}
                {  '<a href="'
 		. $c->url_for(tags => tag => $1, format => 'html')
 		. '">#'.$1.'</a>'}ge;
