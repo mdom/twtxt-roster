@@ -143,7 +143,7 @@ sub startup {
 
             $tweet =~ s{(?<!&)#(\w+)}
                {  '<a href="'
-		. $c->url_for(tags => tag => $1, format => 'html')
+		. $c->url_for(tagstag => tag => $1, format => 'html')
 		. '">#'.$1.'</a>'}ge;
 
             my $http_re = $RE{URI}{HTTP}{ -scheme => qr/https?/ }{ -keep => 1 };
@@ -158,16 +158,19 @@ sub startup {
       $r->under( '/api/:format/' => [ format => [ 'plain', 'json', 'html' ] ] );
     $api->post('/users')->to('users#register');
 
-    # TODO just use a shortcut
-    $api->get('/tweets')->to('tweets#get_tweets');
-    $api->get('/mentions')->to('tweets#get_mentions');
-    $api->get('/tags/:tag')->to('tweets#get_tags')->name('tags');
-    $api->get('/users')->to('users#get');
+    $r->add_shortcut(
+        with_api => sub {
+            my ( $r, $path, $action ) = @_;
+            $r->get($path)->to($action);
+            $api->get($path)->to($action);
+            return $r;
+        }
+    );
 
-    $r->get('/tweets')->to('tweets#get_tweets');
-    $r->get('/mentions')->to('tweets#get_mentions');
-    $r->get('/tags/:tag')->to('tweets#get_tags')->name('tags');
-    $r->get('/users')->to('users#get');
+    $r->with_api( '/tweets',    'tweets#get_tweets' );
+    $r->with_api( '/mentions',  'tweets#get_mentions' );
+    $r->with_api( '/tags/:tag', 'tweets#get_tags' );
+    $r->with_api( '/users',     'users#get' );
 
     $r->get('/')->to('tweets#get_tweets')->name('index');
     $r->websocket('/stream')->to('tweets#stream');
