@@ -1,10 +1,5 @@
 package App::TwtxtRoster::Controller::Tweets;
 use Mojo::Base 'Mojolicious::Controller';
-use Mojo::SQLite;
-use Mojo::Date;
-use Try::Tiny;
-use Mojo::ByteStream 'b';
-use Mojo::JSON 'encode_json';
 
 my $find_tweets_base = <<EOF;
     from tweets join users on tweets.user_id == users.user_id
