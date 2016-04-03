@@ -282,7 +282,7 @@ get '/mentions' => sub {
     my $show_bots = $c->param('show_bots') || 0;
     return $c->render( status => 400, text => '`url` must be provided.' )
       if !$query;
-    return $c->respond_to_api( $find_tweets_1_0, "%@<_% $query>",
+    return $c->respond_to_api( $find_tweets_1_0, "%@<_% $query>%",
         $show_bots, $c->offset );
 };
 
@@ -292,7 +292,7 @@ get '/tags/:tag' => sub {
     my $show_bots = $c->param('show_bots') || 0;
     return $c->render( status => 400, text => '`tag` must be provided.' )
       if !$query;
-    return $c->respond_to_api( $find_tweets_1_0, "%#$query", $show_bots,
+    return $c->respond_to_api( $find_tweets_1_0, "%#$query%", $show_bots,
         $c->offset );
 } => 'tags';
 
