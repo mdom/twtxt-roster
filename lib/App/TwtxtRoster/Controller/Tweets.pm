@@ -33,23 +33,21 @@ sub get_tweets {
 }
 
 sub get_mentions {
-    my $c         = shift;
-    my $query     = $c->param('url');
-    my $show_bots = $c->param('show_bots') || 0;
+    my $c     = shift;
+    my $query = $c->param('url');
     return $c->render( status => 400, text => '`url` must be provided.' )
       if !$query;
-    return $c->respond_to_api( $find_tweets_2_0, "%@<_% $query>%",
-        $show_bots, $c->offset );
+    $c->param( q => "\@<_% $query>" );
+    return $c->get_tweets;
 }
 
 sub get_tags {
-    my $c         = shift;
-    my $query     = $c->param('tag');
-    my $show_bots = $c->param('show_bots') || 0;
+    my $c     = shift;
+    my $query = $c->param('tag');
     return $c->render( status => 400, text => '`tag` must be provided.' )
       if !$query;
-    return $c->respond_to_api( $find_tweets_2_0, "%#$query%", $show_bots,
-        $c->offset );
+    $c->param( q => "#$query" );
+    return $c->get_tweets;
 }
 
 sub stream {
