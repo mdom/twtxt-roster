@@ -136,15 +136,32 @@ sub startup {
             my ( $c, $tweet ) = @_;
 
             $tweet = b($tweet)->xml_escape->to_string;
-            $tweet =~ s{\@&lt;(\w+) (https?://.+?)&gt;}{<a href="$2">\@$1</a>}g;
 
-            $tweet =~ s{(?<!&)#(\w+)}
-               {  '<a href="'
-		. $c->url_for(tagstag => tag => $1, format => 'html')
-		. '">#'.$1.'</a>'}ge;
+            my $mention = qr{\@&lt;(?<nick>\w+) (?<twturl>https?://.+?)&gt;};
+            my $tag     = qr{(?<!&)#(?<tag>\w+)};
+            my $uri     = qr{(?<url>$RE{URI}{HTTP}{ -scheme => qr/https?/ })};
 
-            my $http_re = $RE{URI}{HTTP}{ -scheme => qr/https?/ }{ -keep => 1 };
-            $tweet =~ s{(?<!href=")$http_re}{<a href="$1">$1</a>}g;
+            my $match_handler = sub {
+                my %match = %+;
+                if ( $match{tag} ) {
+                    '<a href="'
+                      . $c->url_for(
+                        tagstag => tag => $match{tag},
+                        format  => 'html'
+                      ) . qq[">#$match{tag}</a>];
+                }
+                elsif ( $match{url} ) {
+                    qq[<a href="$match{url}">$match{url}</a>];
+                }
+                else {
+                    '<a href="'
+                      . $c->url_for( tweetsbyuser => user => $match{twturl} )
+                      . qq[">\@$match{nick}</a>];
+                }
+            };
+
+            $tweet =~ s/($mention|$tag|$uri)/$match_handler->(%+)/ge;
+
             return $tweet;
         }
     );
