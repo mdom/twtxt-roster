@@ -9,6 +9,7 @@ EOF
 sub get {
     my $c = shift;
     my $query = $c->param('q') || '%';
+    $c->stash( template => 'users' );
     return $c->respond_to_api( $find_users_sql, $query, $c->offset );
 }
 

@@ -114,7 +114,6 @@ sub startup {
     $self->helper(
         respond_to_api => sub {
             my ( $c, $sql, @bind_values ) = @_;
-            $c->stash( template => $c->current_route );
             my $values = $c->sql->db->query( $sql, @bind_values );
             return $c->respond_to(
                 plain => sub {
@@ -126,10 +125,7 @@ sub startup {
                     $c->render( json => $values->hashes );
                 },
                 any => sub {
-                    $c->render(
-                        template => 'index',
-                        tweets   => $values->hashes
-                    );
+                    $c->render( tweets => $values->hashes );
                 },
             );
         }

@@ -23,6 +23,7 @@ sub get_tweets {
     my $c         = shift;
     my $query     = $c->param('q') || '%';
     my $show_bots = $c->param('show_bots') || 0;
+    $c->stash( template => 'tweets' );
     return $c->respond_to_api( $find_tweets_2_0, "%$query%", $show_bots,
         $c->offset );
 }
