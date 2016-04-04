@@ -2,7 +2,7 @@ package App::TwtxtRoster::Controller::Users;
 use Mojo::Base 'Mojolicious::Controller';
 
 my $find_users_sql = <<EOF;
-  SELECT url, strftime('%Y-%m-%dT%H:%M:%SZ',timestamp,"unixepoch") as time, nick FROM users
+  SELECT nick, url, strftime('%Y-%m-%dT%H:%M:%SZ',timestamp,"unixepoch") as time FROM users
     WHERE url LIKE ? ORDER BY url LIMIT 20 OFFSET ?
 EOF
 
