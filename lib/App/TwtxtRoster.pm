@@ -29,6 +29,7 @@ sub startup {
         }
     );
 
+    $self->plugin('Mojolicious::Plugin::CORS');
     $self->plugin( minion => { SQLite => $config->{minion_db} } );
     $self->plugin('App::TwtxtRoster::Task::Update');
 
