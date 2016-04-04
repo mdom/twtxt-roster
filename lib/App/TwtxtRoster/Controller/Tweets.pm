@@ -28,6 +28,19 @@ sub get_tweets {
         $c->offset );
 }
 
+sub get_tweets_by_user {
+    my $c    = shift;
+    my $stmt = <<EOF;
+       select nick, url ,strftime('%Y-%m-%dT%H:%M:%SZ',tweets.timestamp,"unixepoch") as time, tweet
+       from tweets, users
+       where tweets.user_id == users.user_id and
+             url is ?
+       order by tweets.timestamp desc limit 20 offset ?
+EOF
+    $c->stash( template => 'tweets' );
+    return $c->respond_to_api( $stmt, $c->param('user'), $c->offset );
+}
+
 sub get_mentions {
     my $c     = shift;
     my $query = $c->param('url');

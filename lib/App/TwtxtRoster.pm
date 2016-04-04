@@ -181,12 +181,13 @@ sub startup {
         }
     );
 
-    $r->with_api( '/tweets',    'tweets#get_tweets' );
-    $r->with_api( '/mentions',  'tweets#get_mentions' );
-    $r->with_api( '/tags/:tag', 'tweets#get_tags' );
-    $r->with_api( '/users',     'users#get' );
+    $r->with_api( '/tweets',          'tweets#get_tweets' );
+    $r->with_api( '/tweets/by/*user', 'tweets#get_tweets_by_user' );
+    $r->with_api( '/mentions',        'tweets#get_mentions' );
+    $r->with_api( '/tags/:tag',       'tweets#get_tags' );
+    $r->with_api( '/users',           'users#get' );
 
-    $r->get('/')->to('tweets#get_tweets')->name('index');
+    $r->get('/')->to('tweets#get_tweets');
     $r->websocket('/stream')->to('tweets#stream');
 }
 

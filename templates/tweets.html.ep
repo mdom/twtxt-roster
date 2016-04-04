@@ -8,7 +8,10 @@
 	    <div class="media-content">
 	      <div class="content">
 		<p>
-		  <a href="<%= $tweet->{url} %>"><strong><%= $tweet->{nick} %></strong></a> <small><%= $tweet->{time} %></small>
+		  <a href="<%= url_for( tweetsbyuser => user => $tweet->{url} ) %>">
+                    <strong><%= $tweet->{nick} %></strong>
+                  </a>
+                  <small><%= $tweet->{time} %></small>
 		  <br>
 		  <%== format_tweet $tweet->{tweet} %>
 		</p>
