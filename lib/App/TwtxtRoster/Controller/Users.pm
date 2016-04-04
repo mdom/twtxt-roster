@@ -3,7 +3,7 @@ use Mojo::Base 'Mojolicious::Controller';
 
 my $find_users_sql = <<EOF;
   SELECT nick, url, strftime('%Y-%m-%dT%H:%M:%SZ',timestamp,"unixepoch") as time FROM users
-    WHERE url LIKE ? ORDER BY url LIMIT 20 OFFSET ?
+    WHERE url LIKE ? ORDER BY time LIMIT 20 OFFSET ?
 EOF
 
 sub get {
