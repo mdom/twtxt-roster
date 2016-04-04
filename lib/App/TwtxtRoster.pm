@@ -144,19 +144,15 @@ sub startup {
             my $match_handler = sub {
                 my %match = %+;
                 if ( $match{tag} ) {
-                    '<a href="'
-                      . $c->url_for(
-                        tagstag => tag => $match{tag},
-                        format  => 'html'
-                      ) . qq[">#$match{tag}</a>];
+                    $c->link_to(
+                        "#$match{tag}" => tagstag => { tag => $match{tag} } );
                 }
                 elsif ( $match{url} ) {
-                    qq[<a href="$match{url}">$match{url}</a>];
+                    $c->link_to( $match{url} => $match{url} );
                 }
                 else {
-                    '<a href="'
-                      . $c->url_for( tweetsbyuser => user => $match{twturl} )
-                      . qq[">\@$match{nick}</a>];
+                    $c->link_to( "\@$match{nick}" => tweetsbyuser =>
+                          { user => $match{twturl} } );
                 }
             };
 
