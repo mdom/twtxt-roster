@@ -13,16 +13,27 @@
     </head>
     <body>
 
-<section class="hero">
+<section class="hero is-info is-small">
   <div class="hero-content">
     <div class="container">
       <h1 class="title">
-        TWTXT Roster
+	#TWTXT Roster
       </h1>
       <h2 class="subtitle">
          The decentralised, minimalist microblogging service for hackers
       </h2>
     </div>
+  </div>
+
+ <div class="hero-footer">
+    <nav class="tabs is-centered">
+      <div class="container">
+        <ul>
+          %= t li => link_to 'Tweets' => 'tweets'
+          %= t li => link_to 'Users'  => 'users'
+        </ul>
+      </div>
+    </nav>
   </div>
 </section>
 
