@@ -101,15 +101,22 @@ sub register {
                 }
 
                 $job->app->minion->enqueue( 'update', [$id],
-                    { delay => $app->config->{delay} } );
+                    { delay => $app->config->{delay}, attempts => 10 } );
 
             }
             catch {
-                $log->debug("Error: $_");
+                $job->fail;
                 $db->query(
-'update users set active = 0, last_error = ? where url is ?',
+                    'update users
+			  set last_error = ?
+			  where url is ?',
                     $_, $url
                 );
+                $db->query(
+                    'update users
+			  set active = 0
+			  where url is ?', $url
+                ) if $job->info->{state} eq 'failed';
 
             };
             return;
