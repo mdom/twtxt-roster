@@ -11,7 +11,7 @@
 	<link rel="shortcut icon" href="/favicon.ico" />
 
     </head>
-    <body>
+<body>
 
 <section class="hero is-info is-small">
   <div class="hero-content">
@@ -37,11 +37,16 @@
   </div>
 </section>
 
-<div class="column"></div>
+<div class="columns">
+<div class="column"><div>
+<form action="<%= url_with %>" method="GET">
+  <div class="column is-offset-4 is-4 control is-grouped">
+    <input class="input" type="text" name="q"><a class="button is-info"> Search </a>
+  </div>
+</form>
+  </div>
 
 <%= content %>
 
-</div>
-
-    </body>
+</body>
 </html>

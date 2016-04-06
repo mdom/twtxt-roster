@@ -1,6 +1,7 @@
 % layout 'default';
 
 <div class="columns">
+
 <div class="column is-offset-4 is-4">
 
 <table class="table">
