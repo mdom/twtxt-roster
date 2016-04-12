@@ -1,43 +1,20 @@
 package App::TwtxtRoster::Controller::Tweets;
 use Mojo::Base 'Mojolicious::Controller';
-
-my $find_tweets_base = <<EOF;
-    from tweets join users on tweets.user_id == users.user_id
-    where
-          tweet like ?
-      and case when ? then 1 else is_bot is 0 end
-    order by tweets.timestamp desc limit 20 offset ?
-EOF
-
-my $find_tweets_1_0 = <<EOF;
-  select "@<"||nick||" "||url||">" as user, strftime('%Y-%m-%dT%H:%M:%SZ',tweets.timestamp,"unixepoch") as time, tweet
-  $find_tweets_base
-EOF
-
-my $find_tweets_2_0 = <<EOF;
-  select nick, url ,strftime('%Y-%m-%dT%H:%M:%SZ',tweets.timestamp,"unixepoch") as time, tweet
-  $find_tweets_base
-EOF
+use Mojo::Loader 'data_section';
 
 sub get_tweets {
     my $c         = shift;
     my $query     = $c->param('q') || '%';
     my $show_bots = $c->param('show_bots') || 0;
     $c->stash( template => 'tweets' );
-    return $c->respond_to_api( $find_tweets_2_0, "%$query%", $show_bots,
-        $c->offset );
+    my $stmt = data_section( __PACKAGE__, 'select_tweet_like.sql' );
+    return $c->respond_to_api( $stmt, "%$query%", $show_bots, $c->offset );
 }
 
 sub get_tweets_by_user {
-    my $c    = shift;
-    my $stmt = <<EOF;
-       select nick, url ,strftime('%Y-%m-%dT%H:%M:%SZ',tweets.timestamp,"unixepoch") as time, tweet
-       from tweets, users
-       where tweets.user_id == users.user_id and
-             url is ?
-       order by tweets.timestamp desc limit 20 offset ?
-EOF
+    my $c = shift;
     $c->stash( template => 'tweets' );
+    my $stmt = data_section( __PACKAGE__, 'select_user.sql' );
     return $c->respond_to_api( $stmt, $c->param('user'), $c->offset );
 }
 
@@ -51,12 +28,14 @@ sub get_mentions {
 }
 
 sub get_tags {
-    my $c     = shift;
-    my $query = $c->param('tag');
+    my $c         = shift;
+    my $tag       = $c->param('tag');
+    my $show_bots = $c->param('show_bots') || 0;
     return $c->render( status => 400, text => '`tag` must be provided.' )
-      if !$query;
-    $c->param( q => "#$query" );
-    return $c->get_tweets;
+      if !$tag;
+    $c->stash( template => 'tweets' );
+    my $stmt = data_section( __PACKAGE__, 'select_tags.sql' );
+    return $c->respond_to_api( $stmt, $tag, $show_bots, $c->offset );
 }
 
 sub stream {
@@ -78,3 +57,33 @@ sub stream {
 }
 
 1;
+
+__DATA__
+
+@@ select_user.sql
+
+select nick, url ,strftime('%Y-%m-%dT%H:%M:%SZ',tweets.timestamp,"unixepoch") as time, tweet
+    from tweets, users using ( user_id )
+    where url is ?
+    order by tweets.timestamp desc
+    limit 20 offset ?
+
+@@ select_tweet_like.sql
+
+select nick, url ,strftime('%Y-%m-%dT%H:%M:%SZ',tweets.timestamp,"unixepoch") as time, tweet
+    from tweets join users using ( user_id )
+    where
+          tweet like ?
+      and case when ? then 1 else is_bot is 0 end
+    order by tweets.timestamp desc limit 20 offset ?
+
+@@ select_tags.sql
+
+select nick, url ,strftime('%Y-%m-%dT%H:%M:%SZ',tweets.timestamp,"unixepoch") as time, tweet
+    from tweets join users       using ( user_id )
+                join tweets_tags using ( tweet_id )
+		join tags        using ( tag_id )
+    where
+          tags.name like ?
+      and case when ? then 1 else is_bot is 0 end
+    order by tweets.timestamp desc limit 20 offset ?
