@@ -65,13 +65,30 @@ sub register {
                         next if $time->epoch > $now->epoch;
 
                         try {
-                            $db->query(
+                            my $tx       = $db->begin;
+                            my $tweet_id = $db->query(
                                 'insert into tweets (user_id,timestamp,tweet)'
                                   . ' values ((select user_id from users where url is ?),?,?)',
                                 $url,
                                 $time->epoch,
                                 substr( $tweet, 0, 1024 )
-                            );
+                            )->last_insert_id;
+
+                            for my $tag ( $tweet =~ /#(\w+)/g ) {
+                                $db->query( '
+					insert or ignore into tags ( name ) values ( ? )
+				    ', $tag );
+                                $db->query( '
+					    insert or ignore into tweets_tags ( tweet_id, tag_id )
+					      values (
+					        ?,
+						(select tag_id from tags where name is ?)
+				              )
+					    ', $tweet_id, $tag );
+                            }
+
+                            $tx->commit;
+
                             $job->app->find_new_urls($tweet);
                             $job->app->sql->pubsub->notify(
                                 'new_tweet' => encode_json(
