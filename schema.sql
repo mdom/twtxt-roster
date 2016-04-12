@@ -19,3 +19,13 @@ CREATE TABLE if not exists users (
 	is_bot INTEGER DEFAULT 0
 );
 
+create table if not exists tweets_tags (
+	tag_id   integer references tags,
+	tweet_id integer references tweets,
+	primary key ( tag_id, tweet_id )
+);
+
+create table if not exists tags (
+	tag_id integer primary key,
+	name text unique
+);
