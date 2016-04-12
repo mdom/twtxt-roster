@@ -1,4 +1,4 @@
-CREATE TABLE tweets (
+CREATE TABLE if not exists tweets (
         tweet_id INTEGER PRIMARY KEY,
         user_id INTEGER NOT NULL,
         tweet TEXT,
@@ -7,7 +7,8 @@ CREATE TABLE tweets (
         FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE,
         CONSTRAINT tweet_user_timestamp UNIQUE ( user_id,tweet,timestamp )
 );
-CREATE TABLE users (
+
+CREATE TABLE if not exists users (
         user_id INTEGER PRIMARY KEY,
         nick TEXT,
         url TEXT UNIQUE,
