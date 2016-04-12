@@ -109,10 +109,11 @@ sub register {
                         my $date =
                           Mojo::Date->new( $res->headers->last_modified );
                         if ( defined $date ) {
-                            $db->query(
-'update users set last_modified = ? where url is ?',
-                                $date->epoch, $url
-                            );
+                            $db->query( '
+				    update users set last_modified = ?
+				      where url is ?
+				',
+                                $date->epoch, $url );
                         }
                     }
                 }
