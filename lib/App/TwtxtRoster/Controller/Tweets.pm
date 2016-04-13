@@ -67,15 +67,14 @@ __DATA__
 
 @@ select_user.sql
 
-select nick, url ,strftime('%Y-%m-%dT%H:%M:%SZ',tweets.timestamp,"unixepoch") as time, tweet
-    from tweets, users using ( user_id )
+select users.nick, users.url ,strftime('%Y-%m-%dT%H:%M:%SZ',tweets.timestamp,"unixepoch") as time, tweets.tweet
+    from tweets join users using ( user_id )
     where url is ?
-    order by tweets.timestamp desc
-    limit 20 offset ?
+    order by tweets.timestamp desc limit 20 offset ?
 
 @@ select_tweet_like.sql
 
-select nick, url ,strftime('%Y-%m-%dT%H:%M:%SZ',tweets.timestamp,"unixepoch") as time, tweet
+select users.nick, users.url ,strftime('%Y-%m-%dT%H:%M:%SZ',tweets.timestamp,"unixepoch") as time, tweets.tweet
     from tweets join users using ( user_id )
     where
           tweet like ?
@@ -84,7 +83,7 @@ select nick, url ,strftime('%Y-%m-%dT%H:%M:%SZ',tweets.timestamp,"unixepoch") as
 
 @@ select_tags.sql
 
-select nick, url ,strftime('%Y-%m-%dT%H:%M:%SZ',tweets.timestamp,"unixepoch") as time, tweet
+select users.nick, users.url ,strftime('%Y-%m-%dT%H:%M:%SZ',tweets.timestamp,"unixepoch") as time, tweets.tweet
     from tweets join users       using ( user_id )
                 join tweets_tags using ( tweet_id )
 		join tags        using ( tag_id )
@@ -95,10 +94,10 @@ select nick, url ,strftime('%Y-%m-%dT%H:%M:%SZ',tweets.timestamp,"unixepoch") as
 
 @@ select_mentions.sql
 
-select users.nick, users.url ,strftime('%Y-%m-%dT%H:%M:%SZ',tweets.timestamp,"unixepoch") as time, tweet
+select users.nick, users.url ,strftime('%Y-%m-%dT%H:%M:%SZ',tweets.timestamp,"unixepoch") as time, tweets.tweet
     from tweets join mentions using ( tweet_id )
-            join users as mentioned on mentions.user_id = mentioned.user_id
-	    join users on tweets.user_id = users.user_id
+                join users as mentioned on mentions.user_id = mentioned.user_id
+	        join users on tweets.user_id = users.user_id
     where ( mentioned.url is ? or mentioned.nick is ? )
       and case when ? then 1 else users.is_bot is 0 end
     order by tweets.timestamp desc limit 20 offset ?
