@@ -144,8 +144,8 @@ sub startup {
             my $match_handler = sub {
                 my %match = %+;
                 if ( $match{tag} ) {
-                    $c->link_to(
-                        "#$match{tag}" => tagstag => { tag => $match{tag} } );
+                    $c->link_to( "#$match{tag}" => $c->url_for('tweets')
+                          ->query( [ q => "#$match{tag}" ] ) );
                 }
                 elsif ( $match{url} ) {
                     $c->link_to( $match{url} => $match{url} );

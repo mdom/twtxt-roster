@@ -39,7 +39,7 @@
 
 <div class="columns">
 <div class="column"><div>
-<form action="<%= url_with %>" method="GET">
+<form action="<%= url_with 'tweets' %>" method="GET">
   <div class="column is-offset-4 is-4 control is-grouped">
     <input class="input" type="text" name="q"><a class="button is-info"> Search </a>
   </div>
