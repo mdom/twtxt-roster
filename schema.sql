@@ -27,5 +27,11 @@ create table if not exists tweets_tags (
 
 create table if not exists tags (
 	tag_id integer primary key,
-	name text unique
+	name text unique not null
+);
+
+create table if not exists mentions (
+	user_id    integer not null references users,
+	tweet_id   integer not null references tweets,
+	primary key ( user_id, tweet_id)
 );

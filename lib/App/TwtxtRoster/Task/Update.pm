@@ -77,6 +77,16 @@ sub register {
 
                             $job->app->log->debug("Inserted $tweet");
 
+                            for my $url ( $tweet =~ /\@<(?:\w+ )?([^>]+)>/g ) {
+                                $db->query(
+                                    data_section( __PACKAGE__,
+                                        'insert_mentions.sql'
+                                    ),
+                                    $tweet_id,
+                                    $url
+                                );
+                            }
+
                             for my $tag ( $tweet =~ /#(\w+)/g ) {
                                 $db->query(
                                     data_section( __PACKAGE__,
@@ -168,6 +178,10 @@ insert into tweets (
 @@ insert_tags.sql
 
 insert or ignore into tags ( name ) values ( ? )
+
+@@ insert_mentions.sql
+
+insert or ignore into mentions select user_id, ? as tweet_id from users where url is ?
 
 @@ insert_tweets_tags.sql
 

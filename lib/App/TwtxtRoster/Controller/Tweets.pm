@@ -19,12 +19,17 @@ sub get_tweets_by_user {
 }
 
 sub get_mentions {
-    my $c     = shift;
-    my $query = $c->param('url');
-    return $c->render( status => 400, text => '`url` must be provided.' )
-      if !$query;
-    $c->param( q => "\@<_% $query>" );
-    return $c->get_tweets;
+    my $c         = shift;
+    my $url       = $c->param('url');
+    my $nick      = $c->param('nick');
+    my $show_bots = $c->param('show_bots') || 0;
+    return $c->render(
+        status => 400,
+        text   => '`url` or `nick` must be provided.'
+    ) if !$url and !$nick;
+    $c->stash( template => 'tweets' );
+    my $stmt = data_section( __PACKAGE__, 'select_mentions.sql' );
+    return $c->respond_to_api( $stmt, $url, $nick, $show_bots, $c->offset );
 }
 
 sub get_tags {
@@ -86,4 +91,14 @@ select nick, url ,strftime('%Y-%m-%dT%H:%M:%SZ',tweets.timestamp,"unixepoch") as
     where
           tags.name like ?
       and case when ? then 1 else is_bot is 0 end
+    order by tweets.timestamp desc limit 20 offset ?
+
+@@ select_mentions.sql
+
+select users.nick, users.url ,strftime('%Y-%m-%dT%H:%M:%SZ',tweets.timestamp,"unixepoch") as time, tweet
+    from tweets join mentions using ( tweet_id )
+            join users as mentioned on mentions.user_id = mentioned.user_id
+	    join users on tweets.user_id = users.user_id
+    where ( mentioned.url is ? or mentioned.nick is ? )
+      and case when ? then 1 else users.is_bot is 0 end
     order by tweets.timestamp desc limit 20 offset ?
