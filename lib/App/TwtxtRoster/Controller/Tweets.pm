@@ -7,6 +7,17 @@ sub get_tweets {
     my $query     = $c->param('q') || '%';
     my $show_bots = $c->param('show_bots') || 0;
     $c->stash( template => 'tweets' );
+
+    if ( substr( $query, 0, 1 ) eq '@' ) {
+        $c->param( nick => substr( $query, 1 ) );
+        return $c->get_mentions;
+    }
+
+    if ( substr( $query, 0, 1 ) eq '#' ) {
+        $c->param( tag => substr( $query, 1 ) );
+        return $c->get_tags;
+    }
+
     my $stmt = data_section( __PACKAGE__, 'select_tweet_like.sql' );
     return $c->respond_to_api( $stmt, "%$query%", $show_bots, $c->offset );
 }
