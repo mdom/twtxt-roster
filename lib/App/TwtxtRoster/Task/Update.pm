@@ -5,6 +5,7 @@ use Mojo::Date;
 use Try::Tiny;
 use Mojo::ByteStream 'b';
 use Mojo::JSON 'encode_json';
+use Mojo::Loader 'data_section';
 
 sub register {
     my ( $self, $app ) = @_;
@@ -40,7 +41,7 @@ sub register {
                 my $res = $tx->success;
                 die $tx->error->{message} if !$res;
 
-                $job->app->log->debug("Success $url");
+                $job->app->log->debug( "Success $url with code " . $res->code );
 
                 if ( $res->code == 301 || $res->code == 307 ) {
                     $db->query( 'delete from users where url is ?', $url );
@@ -67,24 +68,29 @@ sub register {
                         try {
                             my $tx       = $db->begin;
                             my $tweet_id = $db->query(
-                                'insert into tweets (user_id,timestamp,tweet)'
-                                  . ' values ((select user_id from users where url is ?),?,?)',
+                                data_section( __PACKAGE__, 'insert_tweets.sql'
+                                ),
                                 $url,
                                 $time->epoch,
                                 substr( $tweet, 0, 1024 )
                             )->last_insert_id;
 
+                            $job->app->log->debug("Inserted $tweet");
+
                             for my $tag ( $tweet =~ /#(\w+)/g ) {
-                                $db->query( '
-					insert or ignore into tags ( name ) values ( ? )
-				    ', $tag );
-                                $db->query( '
-					    insert or ignore into tweets_tags ( tweet_id, tag_id )
-					      values (
-					        ?,
-						(select tag_id from tags where name is ?)
-				              )
-					    ', $tweet_id, $tag );
+                                $db->query(
+                                    data_section( __PACKAGE__,
+                                        'insert_tags.sql'
+                                    ),
+                                    $tag
+                                );
+                                $db->query(
+                                    data_section( __PACKAGE__,
+                                        'insert_tweets_tags.sql'
+                                    ),
+                                    $tweet_id,
+                                    $tag
+                                );
                             }
 
                             $tx->commit;
@@ -143,3 +149,33 @@ sub register {
 }
 
 1;
+
+__DATA__
+
+@@ insert_tweets.sql
+
+insert into tweets (
+    user_id,
+    timestamp,
+    tweet
+  )
+  values (
+    (select user_id from users where url is ?),
+    ?,
+    ?
+  )
+
+@@ insert_tags.sql
+
+insert or ignore into tags ( name ) values ( ? )
+
+@@ insert_tweets_tags.sql
+
+insert or ignore into tweets_tags (
+    tweet_id,
+    tag_id
+  )
+  values (
+    ?,
+    (select tag_id from tags where name is ?)
+  )
