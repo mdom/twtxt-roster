@@ -6,6 +6,8 @@
 
 %= javascript begin
 
+  // TODO just call tags when term start with #
+
   $(function() {
     $( "#search" ).autocomplete({
       minLength: 2,
