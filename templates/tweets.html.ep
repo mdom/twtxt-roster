@@ -1,5 +1,33 @@
 % layout 'default';
 
+%= stylesheet "//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css"
+%= javascript "//code.jquery.com/jquery-1.10.2.js"
+%= javascript "//code.jquery.com/ui/1.11.4/jquery-ui.js"
+
+%= javascript begin
+
+  $(function() {
+    $( "#search" ).autocomplete({
+      minLength: 2,
+      source: function( request, response ) {
+        $.getJSON( "<%= url_for 'tags' %>", request, function( data, status, xhr ) {
+          response( data );
+        });
+      }
+    });
+  });
+
+% end
+
+<div class="columns">
+<div class="column"><div>
+<form action="<%= url_with 'tweets' %>" method="GET">
+  <div class="column is-offset-4 is-4 control is-grouped">
+    <input id="search" class="input" type="text" name="q"><a class="button is-info"> Search </a>
+  </div>
+</form>
+  </div>
+
 % for my $tweet ( $tweets->each ) {
 <div class="columns">
 <div class="column is-offset-4 is-4">

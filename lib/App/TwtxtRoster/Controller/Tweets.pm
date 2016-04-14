@@ -54,6 +54,17 @@ sub get_tags {
     return $c->respond_to_api( $stmt, $tag, $show_bots, $c->offset );
 }
 
+sub list_tags {
+    my $c      = shift;
+    my $prefix = $c->param('term') || '#';
+    my $tag    = substr( $prefix, 1 ) . '%';
+    return $c->render(
+        json =>
+          $c->sql->db->query( 'select "#"||name from tags where name like ?',
+            $tag )->arrays->flatten
+    );
+}
+
 sub stream {
     my $c = shift;
     $c->inactivity_timeout(0);

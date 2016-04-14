@@ -1,6 +1,15 @@
 % layout 'default';
 
 <div class="columns">
+<div class="column"><div>
+<form action="<%= url_with 'users' %>" method="GET">
+  <div class="column is-offset-4 is-4 control is-grouped">
+    <input class="input" type="text" name="q"><a class="button is-info"> Search </a>
+  </div>
+</form>
+  </div>
+
+<div class="columns">
 
 <div class="column is-offset-4 is-4">
 
