@@ -55,9 +55,8 @@ sub get_tags {
 }
 
 sub list_tags {
-    my $c      = shift;
-    my $prefix = $c->param('term') || '#';
-    my $tag    = substr( $prefix, 1 ) . '%';
+    my $c = shift;
+    my $tag = ( $c->param('term') || '' ) . '%';
     return $c->render(
         json =>
           $c->sql->db->query( 'select "#"||name from tags where name like ?',

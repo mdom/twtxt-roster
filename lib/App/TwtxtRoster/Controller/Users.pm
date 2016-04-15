@@ -13,6 +13,17 @@ sub get {
     return $c->respond_to_api( $find_users_sql, $query, $query, $c->offset );
 }
 
+sub nicks {
+    my $c = shift;
+    my $nick = ( $c->param('term') || '' ) . '%';
+    $c->app->log->debug("Searching $nick");
+    return $c->render(
+        json =>
+          $c->sql->db->query( 'select "@"||nick from users where nick like ?',
+            $nick )->arrays->flatten
+    );
+}
+
 sub register {
     my $c = shift;
     return $c->render( text => 'Registration closed.', status => 403 )

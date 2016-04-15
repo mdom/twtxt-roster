@@ -183,6 +183,7 @@ sub startup {
     $r->with_api( '/tags/:tag',       'tweets#get_tags' );
     $r->with_api( '/tags',            'tweets#list_tags' );
     $r->with_api( '/users',           'users#get' );
+    $r->with_api( '/nicks',           'users#nicks' );
 
     $r->get('/')->to('tweets#get_tweets');
     $r->websocket('/stream')->to('tweets#stream');
