@@ -1,37 +1,37 @@
-CREATE TABLE if not exists tweets (
-        tweet_id INTEGER PRIMARY KEY,
-        user_id INTEGER NOT NULL,
+-- 1 up
+CREATE TABLE IF NOT EXISTS tweets (
+        tweet_id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users,
         tweet TEXT,
-        timestamp INTEGER NOT NULL DEFAULT ( strftime('%s','now') ),
-        added     INTEGER NOT NULL DEFAULT ( strftime('%s','now') ),
-        FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-        CONSTRAINT tweet_user_timestamp UNIQUE ( user_id,tweet,timestamp )
+        timestamp TIMESTAMP NOT NULL DEFAULT now(),
+        added     TIMESTAMP NOT NULL DEFAULT now(),
+        UNIQUE ( user_id,tweet,timestamp )
 );
 
-CREATE TABLE if not exists users (
-        user_id INTEGER PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS users (
+        user_id SERIAL PRIMARY KEY,
         nick TEXT,
         url TEXT UNIQUE,
-        timestamp INTEGER NOT NULL DEFAULT ( strftime('%s','now') ),
+        timestamp TIMESTAMP NOT NULL DEFAULT now(),
 	last_modified TEXT,
-	active INTEGER DEFAULT 1,
+	active BOOLEAN DEFAULT TRUE,
 	last_error TEXT,
-	is_bot INTEGER DEFAULT 0
+	is_bot BOOLEAN DEFAULT FALSE,
 );
 
-create table if not exists tweets_tags (
-	tag_id   integer references tags,
-	tweet_id integer references tweets,
-	primary key ( tag_id, tweet_id )
+CREATE TABLE IF NOT EXISTS tweets_tags (
+	tag_id   INTEGER REFERENCES tags,
+	tweet_id INTEGER REFERENCES tweets,
+	PRIMARY KEY ( tag_id, tweet_id )
 );
 
-create table if not exists tags (
-	tag_id integer primary key,
-	name text unique not null
+CREATE TABLE IF NOT EXISTS tags (
+	tag_id SERIAL PRIMARY KEY,
+	name TEXT UNIQUE NOT NULL
 );
 
-create table if not exists mentions (
-	user_id    integer not null references users,
-	tweet_id   integer not null references tweets,
-	primary key ( user_id, tweet_id)
+CREATE TABLE IF NOT EXISTS mentions (
+	user_id  INTEGER NOT NULL REFERENCES users,
+	tweet_id INTEGER NOT NULL REFERENCES tweets,
+	PRIMARY KEY ( user_id, tweet_id)
 );

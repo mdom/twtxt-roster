@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use Mojo::Base 'Mojolicious';
 
-use Mojo::SQLite;
+use Mojo::PG;
 use Mojo::Date;
 use Try::Tiny;
 use Mojo::ByteStream 'b';
@@ -21,8 +21,6 @@ sub startup {
     my $config = $self->plugin(
         config => {
             default => {
-                minion_db    => 'sqlite:minion.db',
-                registry_db  => 'sqlite:registry.db',
                 delay        => 300,
                 registration => 0,
             }
@@ -30,7 +28,7 @@ sub startup {
     );
 
     $self->plugin('Mojolicious::Plugin::CORS');
-    $self->plugin( minion => { SQLite => $config->{minion_db} } );
+    $self->plugin( minion => { PG => $config->{db} } );
     $self->plugin('App::TwtxtRoster::Task::Update');
 
     $self->types->type( plain => 'text/plain;charset=UTF-8' );
@@ -93,7 +91,7 @@ sub startup {
 
     $self->helper(
         sql => sub {
-            state $sql = Mojo::SQLite->new( $config->{registry_db} );
+            state $sql = Mojo::PG->new( $config->{db} );
         }
     );
 
