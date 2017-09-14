@@ -33,6 +33,10 @@ sub startup {
 
     $self->types->type( plain => 'text/plain;charset=UTF-8' );
 
+    my $path = $self->home->child('schema.sql');
+    $self->sqlite->auto_migrate(1)->migrations->name('twtxt-roster')
+      ->from_file($path);
+
     $self->helper(
         find_new_urls => sub {
             my ( $self, $tweet ) = @_;
