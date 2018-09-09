@@ -27,8 +27,7 @@ sub startup {
         }
     );
 
-    $self->plugin('Mojolicious::Plugin::CORS');
-    $self->plugin( minion => { PG => $config->{db} } );
+    $self->plugin( minion => { SQLite => $config->{db} } );
     $self->plugin('App::TwtxtRoster::Task::Update');
 
     $self->types->type( plain => 'text/plain;charset=UTF-8' );
