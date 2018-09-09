@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use Mojo::Base 'Mojolicious';
 
-use Mojo::PG;
+use Mojo::SQLite;
 use Mojo::Date;
 use Try::Tiny;
 use Mojo::ByteStream 'b';
@@ -94,7 +94,7 @@ sub startup {
 
     $self->helper(
         sql => sub {
-            state $sql = Mojo::PG->new( $config->{db} );
+            state $sql = Mojo::SQLite->new( $config->{db} );
         }
     );
 
